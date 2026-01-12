@@ -1,0 +1,129 @@
+:root {
+    --primary: #0047ab;
+    --primary-dark: #002d72;
+    --accent: #e31837;
+    --emerald: #00a86b;
+    --luxury-gold: #d4af37;
+    --dark: #1a1a1a;
+    --light: #f8f9fa;
+    --navbar-height: 85px; /* ← change this if your navbar height is different */
+}
+
+/* Global */
+body {
+    font-family: "Montserrat", sans-serif;
+    color: var(--dark);
+    background: #fff;
+    line-height: 1.7;
+    scroll-behavior: smooth;
+    padding-top: var(--navbar-height);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", serif;
+}
+
+/* =============================================
+   FORM & CARD STYLES
+============================================= */
+.card-header {
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+}
+
+#aircraftSelect option {
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 64px 48px;
+    padding-right: 90px !important;
+}
+
+#previewImage {
+    height: 100%;
+    object-fit: cover;
+    min-height: 180px;
+}
+
+.passenger-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* =============================================
+   FOOTER STYLES
+============================================= */
+.footer {
+    background: var(--primary-dark);
+    color: #ffffff;
+    padding: 5rem 0 3rem;
+}
+
+.footer-brand {
+    font-size: 2.4rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+}
+
+.footer-tagline {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.footer-title {
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.footer-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    transition: color 0.25s ease;
+}
+
+.footer-link:hover {
+    color: var(--luxury-gold);
+}
+
+.footer-link i {
+    font-size: 1.1rem;
+}
+
+.footer-info li {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+    list-style: none;
+    padding-left: 0;
+}
+
+.footer-info li:before {
+    content: "✔";
+    color: var(--luxury-gold);
+    margin-right: 10px;
+}
+
+.footer-divider {
+    margin: 3.5rem 0 1.5rem;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.footer-copy {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.8rem;
+}
+
+/* Small responsive improvement for mobile */
+@media (max-width: 767px) {
+    .footer {
+        padding: 4rem 0 2.5rem;
+    }
+    .footer-brand {
+        font-size: 2rem;
+    }
+}

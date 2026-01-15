@@ -1,0 +1,165 @@
+/* General body styling */
+body {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background: url("bg.jpg") no-repeat center center fixed;
+  background-size: cover;
+  margin: 0;
+  padding: 2rem;
+  width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 0;
+}
+
+/* Blur overlay */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  background-size: cover;
+  filter: blur(8px); /* Adjust blur amount */
+  z-index: -1; /* Keep it behind content */
+}
+
+/* Base styles */
+body {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  padding: 2rem;
+  margin: 0;
+  width: 100vw; /* Make body take full viewport width */
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.body-container {
+  position: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem; /* Increased gap for more space between forms */
+  align-items: start;
+  margin: 0 auto;
+  max-width: 1400px; /* Increased max-width for a wider grid */
+  width: 100%; /* Make grid container fluid */
+  padding: 2rem 1rem; /* Add horizontal padding for breathing room */
+  justify-content: center; /* Center the grid horizontally */
+}
+
+/* Responsive: stack forms on small screens */
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 98vw;
+    padding: 1rem 0.5rem;
+  }
+}
+
+/* Headings */
+h1 {
+  text-align: center;
+  color: #4b4b4bda;
+  font-size: 4rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  margin-top: 0rem;
+  font-size: 2rem;
+  color: #676767;
+}
+
+/* Form styling */
+form {
+  background-color: #ebebeb62;
+  padding: 2.5rem; /* More padding for a wider look */
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.12); /* Enhanced shadow */
+  margin-bottom: 2rem;
+  min-width: 0;
+  width: 100%;
+  max-width: 600px; /* Wider forms */
+  justify-self: center; /* Center form in its grid cell */
+}
+
+/* Center align form titles */
+form h2 {
+  text-align: center;
+}
+
+/* Labels and inputs */
+label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+/* Textarea */
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Buttons */
+button {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #005fa3;
+}
+
+/* Horizontal rule */
+hr {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+/* Make the whole Fetch Emails form into 2 columns */
+form[action="read-email.php"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Span the title and button across 2 columns */
+form[action="read-email.php"] h2,
+form[action="read-email.php"] button {
+  grid-column: span 2;
+}

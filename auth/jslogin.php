@@ -62,12 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             // DEBUG: Log password info
             error_log("Login attempt for: " . $row['email']);
-<<<<<<< HEAD
-=======
-            error_log("Stored hash: " . $row['password']);
-            error_log("Input password: " . $password);
-            error_log("Hash length: " . strlen($row['password']));
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
 
             // Verify password
             if (password_verify($password, $row["password"])) {
@@ -78,15 +72,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION["fullname"] = ($row["first_name"] ?? '') . " " . ($row["last_name"] ?? '');
                 $_SESSION["email"] = $row["email"];
                 $_SESSION["role"] = $row["role"];
-<<<<<<< HEAD
                 $_SESSION["name"] = $_SESSION["fullname"];
 
                 error_log("Login SUCCESS for user ID: " . $row["user_id"]);
-=======
-
-                error_log("Login SUCCESS for user ID: " . $row["user_id"]);
-                error_log("Session role: " . $_SESSION["role"]);
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
 
                 // Set remember me cookie if requested
                 if ($remember) {
@@ -145,10 +133,7 @@ if (!isset($_SESSION["user_id"]) && isset($_COOKIE["remember_email"])) {
                         $_SESSION["fullname"] = $row["first_name"] . " " . $row["last_name"];
                         $_SESSION["email"] = $row["email"];
                         $_SESSION["role"] = $row["role"];
-<<<<<<< HEAD
                         $_SESSION["name"] = $_SESSION["fullname"];
-=======
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                     }
 
                     $stmt->close();

@@ -3,10 +3,6 @@ session_start();
 include("../db/connect.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-<<<<<<< HEAD
-=======
-    // Get form data
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
     $firstname = mysqli_real_escape_string($conn, $_POST["firstname"] ?? '');
     $lastname  = mysqli_real_escape_string($conn, $_POST["lastname"] ?? '');
     $email     = mysqli_real_escape_string($conn, $_POST["email"] ?? '');
@@ -26,10 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!preg_match('/[A-Z]/', $password)) { echo "password_no_uppercase"; exit(); }
     if (!preg_match('/[0-9]/', $password)) { echo "password_no_number"; exit(); }
     if (!preg_match('/[^a-zA-Z0-9]/', $password)) { echo "password_no_special"; exit(); }
-<<<<<<< HEAD
     
-=======
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
     $phone_clean = preg_replace('/\D/', '', $phone);
     if (!preg_match('/^09[0-9]{9}$/', $phone_clean)) { echo "invalid_phone"; exit(); }
 
@@ -84,11 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             "last_name"     => $lastname,
             "email"         => $email,
             "phone"         => $phone_clean,
-<<<<<<< HEAD
             "password"      => $hashed_password,
-=======
-            "password"      => $hashed_password, // hashed password
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             "origin_system" => "Airlyft"
         ];
 
@@ -126,24 +115,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>AirLyft - Sign Up</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="../assets/img/icon.png" type="image/png">
-<<<<<<< HEAD
     <link rel="shortcut icon" href="../assets/img/icon.png" type="image/png">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;900&display=swap" rel="stylesheet">
-=======
-
-    <!-- Bootstrap & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;900&display=swap"
-        rel="stylesheet">
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
 
     <style>
-        /* Your existing CSS styles remain the same */
         :root {
             --primary: #0047ab;
             --primary-dark: #002d72;
@@ -456,15 +434,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 
 <body>
-<<<<<<< HEAD
     <div class="alert-container"></div>
 
-=======
-    <!-- Alert Container -->
-    <div class="alert-container"></div>
-
-    <!-- Navbar -->
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container-fluid px-3 px-lg-4">
             <a class="navbar-brand d-flex align-items-center" href="../index.php">
@@ -497,22 +468,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         <div class="signup-body">
                             <form id="signupForm" class="needs-validation form-center" novalidate>
-<<<<<<< HEAD
-=======
-                                <!-- First Name and Last Name Row -->
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                                 <div class="name-row">
                                     <div class="name-input">
                                         <div class="input-group input-group-lg">
                                             <span class="input-group-text"><i class="fas fa-user"></i></span>
                                             <input type="text" class="form-control form-control-lg" id="firstname"
                                                 placeholder="First Name" required minlength="2">
-<<<<<<< HEAD
                                             <div class="invalid-feedback">First name must be at least 2 characters.</div>
-=======
-                                            <div class="invalid-feedback">First name must be at least 2 characters.
-                                            </div>
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                                         </div>
                                     </div>
 
@@ -542,12 +504,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
-<<<<<<< HEAD
                                     <div class="invalid-feedback">Password must be at least 8 characters with uppercase, lowercase, number, and special character.</div>
-=======
-                                    <div class="invalid-feedback">Password must be at least 8 characters with uppercase,
-                                        lowercase, number, and special character.</div>
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                                 </div>
 
                                 <div class="input-group input-group-lg">
@@ -566,7 +523,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <span class="input-group-text"><i class="fas fa-phone"></i></span>
                                     <input type="tel" class="form-control form-control-lg" id="phone"
                                         placeholder="Phone Number (e.g., 09123456789)" required>
-<<<<<<< HEAD
                                     <div class="invalid-feedback">Please enter a valid 11-digit Philippine phone number.</div>
                                 </div>
 
@@ -578,20 +534,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <div class="invalid-feedback">You must agree to the terms.</div>
                                 </div>
 
-=======
-                                    <div class="invalid-feedback">Please enter a valid 11-digit Philippine phone number.
-                                    </div>
-                                </div>
-
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="agreeTerms" required>
-                                    <label class="form-check-label" for="agreeTerms">
-                                        I agree to the <a href="terms.php" target="_blank">Terms & Conditions</a>
-                                    </label>
-                                    <div class="invalid-feedback">You must agree to the terms.</div>
-                                </div>
-
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                                 <button type="submit" id="signupBtn" class="btn signup-btn">
                                     <i class="fas fa-user-plus me-2"></i>Create Account
                                 </button>
@@ -612,10 +554,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <script>
         $(document).ready(function () {
-<<<<<<< HEAD
-=======
-            // Password toggle
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             $('#togglePassword').click(function () {
                 const passwordInput = $('#password');
                 const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
@@ -630,10 +568,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $(this).find('i').toggleClass('fa-eye fa-eye-slash');
             });
 
-<<<<<<< HEAD
-=======
-            // Show alert function
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             function showAlert(message, type = 'info') {
                 const alertContainer = $('.alert-container');
                 const icons = {
@@ -655,27 +589,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 alertContainer.append(alertHtml);
 
-<<<<<<< HEAD
-=======
-                // Auto remove after 5 seconds
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 setTimeout(() => {
                     alertContainer.find('.alert').first().alert('close');
                 }, 5000);
             }
 
-<<<<<<< HEAD
-=======
-            // Password validation
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             function validatePassword() {
                 const password = $('#password').val();
                 const confirmPassword = $('#confirmPassword').val();
 
-<<<<<<< HEAD
-=======
-                // Check requirements
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const hasLower = /[a-z]/.test(password);
                 const hasUpper = /[A-Z]/.test(password);
                 const hasNumber = /[0-9]/.test(password);
@@ -686,17 +608,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 return hasLower && hasUpper && hasNumber && hasSpecial && hasLength && passwordsMatch;
             }
 
-<<<<<<< HEAD
             function validateForm() {
                 let isValid = true;
 
-=======
-            // Form validation
-            function validateForm() {
-                let isValid = true;
-
-                // First name
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const firstname = $('#firstname').val().trim();
                 if (firstname.length < 2) {
                     $('#firstname').addClass('is-invalid');
@@ -705,10 +619,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $('#firstname').removeClass('is-invalid').addClass('is-valid');
                 }
 
-<<<<<<< HEAD
-=======
-                // Last name
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const lastname = $('#lastname').val().trim();
                 if (lastname.length < 2) {
                     $('#lastname').addClass('is-invalid');
@@ -717,10 +627,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $('#lastname').removeClass('is-invalid').addClass('is-valid');
                 }
 
-<<<<<<< HEAD
-=======
-                // Email
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const email = $('#email').val().trim().toLowerCase();
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!email || !emailRegex.test(email)) {
@@ -734,10 +640,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $('#email').removeClass('is-invalid').addClass('is-valid');
                 }
 
-<<<<<<< HEAD
-=======
-                // Password
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 if (!validatePassword()) {
                     $('#password').addClass('is-invalid');
                     $('#confirmPassword').addClass('is-invalid');
@@ -748,10 +650,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $('#confirmPassword').removeClass('is-invalid').addClass('is-valid');
                 }
 
-<<<<<<< HEAD
-=======
-                // Phone
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const phone = $('#phone').val().replace(/\D/g, '');
                 if (!/^09[0-9]{9}$/.test(phone)) {
                     $('#phone').addClass('is-invalid');
@@ -761,10 +659,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $('#phone').removeClass('is-invalid').addClass('is-valid');
                 }
 
-<<<<<<< HEAD
-=======
-                // Terms
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 if (!$('#agreeTerms').is(':checked')) {
                     $('#agreeTerms').addClass('is-invalid');
                     showAlert('You must agree to the terms and conditions.', 'warning');
@@ -776,10 +670,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 return isValid;
             }
 
-<<<<<<< HEAD
-=======
-            // Real-time validation
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             $('#firstname, #lastname, #email, #password, #confirmPassword, #phone').on('input', function () {
                 $(this).removeClass('is-invalid is-valid');
             });
@@ -788,10 +678,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $(this).removeClass('is-invalid');
             });
 
-<<<<<<< HEAD
-=======
-            // Form submission
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
             $('#signupForm').submit(function (e) {
                 e.preventDefault();
 
@@ -799,10 +685,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     return;
                 }
 
-<<<<<<< HEAD
-=======
-                // Get form data
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                 const formData = {
                     firstname: $('#firstname').val().trim(),
                     lastname: $('#lastname').val().trim(),
@@ -810,20 +692,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     phone: $('#phone').val().replace(/\D/g, ''),
                     password: $('#password').val()
                 };
-<<<<<<< HEAD
 
                 const signupBtn = $('#signupBtn');
                 const originalHtml = signupBtn.html();
                 signupBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Creating Account...');
-=======
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
 
-                // Disable button and show loading
-                const signupBtn = $('#signupBtn');
-                const originalHtml = signupBtn.html();
-                signupBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Creating Account...');
-
-                // AJAX request
                 $.ajax({
                     type: 'POST',
                     url: 'signup.php',
@@ -841,7 +714,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         } else if (response.startsWith('database_error')) {
                             showAlert('System error. Please try again.', 'danger');
                         } else {
-<<<<<<< HEAD
                             const errorMessages = {
                                 'email_exists': 'Email already exists. Please use a different email.',
                                 'short_firstname': 'First name must be at least 2 characters.',
@@ -859,47 +731,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                             const message = errorMessages[response] || 'Registration failed: ' + response;
                             showAlert(message, 'warning');
-=======
-                            switch (response) {
-                                case 'email_exists':
-                                    showAlert('Email already exists. Please use a different email.', 'warning');
-                                    $('#email').focus().select();
-                                    break;
-                                case 'short_firstname':
-                                    showAlert('First name must be at least 2 characters.', 'warning');
-                                    $('#firstname').focus().select();
-                                    break;
-                                case 'short_lastname':
-                                    showAlert('Last name must be at least 2 characters.', 'warning');
-                                    $('#lastname').focus().select();
-                                    break;
-                                case 'invalid_email':
-                                    showAlert('Please enter a valid email address.', 'warning');
-                                    $('#email').focus().select();
-                                    break;
-                                case 'invalid_gmail':
-                                    showAlert('Please use a Gmail address.', 'warning');
-                                    $('#email').focus().select();
-                                    break;
-                                case 'short_password':
-                                case 'password_no_lowercase':
-                                case 'password_no_uppercase':
-                                case 'password_no_number':
-                                case 'password_no_special':
-                                    showAlert('Password must be at least 8 characters with uppercase, lowercase, number, and special character.', 'warning');
-                                    $('#password').focus().select();
-                                    break;
-                                case 'invalid_phone':
-                                    showAlert('Please enter a valid Philippine phone number.', 'warning');
-                                    $('#phone').focus().select();
-                                    break;
-                                case 'missing_fields':
-                                    showAlert('Please fill in all fields.', 'warning');
-                                    break;
-                                default:
-                                    showAlert('Registration failed: ' + response, 'danger');
-                            }
->>>>>>> c7a4d40679b917bc06b8a3dc09e9c2fb0e177fc6
                         }
                     },
                     error: function (xhr, status, error) {

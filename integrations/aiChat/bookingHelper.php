@@ -1,7 +1,4 @@
 <?php
-// /integrations/aiChat/bookingHelper.php - Database Integration
-// Works with existing AirLyft database (NO MODIFICATIONS)
-
 session_start();
 
 class BookingHelper
@@ -29,7 +26,7 @@ class BookingHelper
             $stmt->bind_param("i", $this->user_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result && $row = $result->fetch_assoc()) {
                 return $row['first_name'] ?? null;
             }
@@ -54,7 +51,7 @@ class BookingHelper
             $stmt->bind_param("i", $this->user_id);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result && $row = $result->fetch_assoc()) {
                 $first = $row['first_name'] ?? '';
                 $last = $row['last_name'] ?? '';

@@ -1,8 +1,6 @@
 <?php
-// index.php - Main landing page with conditional navbar
 session_start();
 
-// Check if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : '';
 ?>
@@ -15,27 +13,20 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
     <meta name="description" content="Airlyft - Luxury private air travel to the most exclusive destinations in the Philippines. Premium service, modern fleet, curated getaways." />
     <title>Airlyft Travel</title>
 
-    <!-- Favicon -->
     <link rel="icon" href="assets/img/icon.png" type="image/png">
     <link rel="shortcut icon" href="assets/img/icon.png" type="image/png">
 
-    <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Boxicons -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;900&display=swap" rel="stylesheet">
 
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/index.css">
 
-    <!-- Index-specific CSS -->
     <style>
-        /* User dropdown styles */
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -116,22 +107,19 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
 
 <body>
 
-    <!-- Navigation with Scrollspy -->
     <nav id="navbar-example3" class="navbar navbar-expand-lg fixed-top">
         <div class="container-fluid px-3 px-lg-4">
-            <!-- Brand / Logo -->
+
             <a class="navbar-brand d-flex align-items-center" href="#home">
                 <img src="assets/img/logo.png" alt="AirLyft Logo" class="nav-logo" loading="lazy">
             </a>
 
-            <!-- Toggler for mobile -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav"
                 aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <!-- Scrollspy Menu items -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center gap-2 gap-lg-4">
                     <li class="nav-item">
@@ -150,7 +138,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                         <a class="nav-link" href="#contact">Contact</a>
                     </li>
 
-                    <!-- Conditional Login/User Dropdown -->
                     <?php if ($isLoggedIn): ?>
                         <li class="nav-item dropdown user-dropdown ms-lg-3">
                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -178,7 +165,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </nav>
 
-    <!-- Progress Indicator -->
     <div class="progress-indicator d-none d-lg-block">
         <a href="#home" class="progress-dot" data-bs-toggle="tooltip" title="Home"></a>
         <a href="#destinations" class="progress-dot" data-bs-toggle="tooltip" title="Destinations"></a>
@@ -187,7 +173,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         <a href="#contact" class="progress-dot" data-bs-toggle="tooltip" title="Contact"></a>
     </div>
 
-    <!-- Hero -->
     <section class="hero" id="home">
         <video autoplay muted loop playsinline class="hero-video" poster="assets/img/hero-poster.jpg">
             <source src="assets/vid/montage.mp4" type="video/mp4">
@@ -207,7 +192,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             </div>
         </div>
 
-        <!-- Scroll Down Indicator -->
         <div class="scroll-down-indicator">
             <a href="#destinations" class="scroll-down-link">
                 <i class='bx bx-chevron-down'></i>
@@ -323,7 +307,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </section>
 
-    <!-- Fleet Section -->
     <section class="section-padding bg-gradient-fleet" id="fleet">
         <div class="container">
             <div class="text-center mb-5">
@@ -418,7 +401,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                     </div>
                 </div>
             </div>
-            <!-- END Row wrapper -->
 
             <div class="text-center mt-5 pt-4">
                 <?php if ($isLoggedIn): ?>
@@ -430,7 +412,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </section>
 
-    <!-- About -->
     <section class="section-padding about-section" id="about">
         <div class="container">
             <div class="row justify-content-center">
@@ -450,11 +431,10 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer" id="contact">
         <div class="container">
             <div class="row gy-5 align-items-start">
-                <!-- BRAND -->
+
                 <div class="col-md-4 text-center text-md-start">
                     <h3 class="footer-brand">AirLyft</h3>
                     <p class="footer-tagline mt-3">
@@ -463,7 +443,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                     </p>
                 </div>
 
-                <!-- CONTACT -->
                 <div class="col-md-4">
                     <h5 class="footer-title">Get In Touch</h5>
                     <ul class="list-unstyled contact-list mt-4">
@@ -482,7 +461,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                     </ul>
                 </div>
 
-                <!-- TRUST / SERVICE INFO -->
                 <div class="col-md-4 text-center text-md-start">
                     <h5 class="footer-title">Why Fly With Us</h5>
                     <ul class="list-unstyled footer-info mt-4">
@@ -494,10 +472,8 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                 </div>
             </div>
 
-            <!-- DIVIDER -->
             <div class="footer-divider"></div>
 
-            <!-- COPYRIGHT -->
             <div class="text-center">
                 <small class="footer-copy">
                     © <?= date("Y") ?> Airlyft Travel Co. All rights reserved.
@@ -506,7 +482,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </footer>
 
-    <!-- Lightbox Galleries with consistent sizing -->
     <div id="lightbox-cessna" class="lightbox">
         <span class="lightbox-close" onclick="closeLightbox('cessna')"><i class="bx bx-x"></i></span>
         <div class="lightbox-image-container">
@@ -551,17 +526,14 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Initialize Scrollspy
         const scrollSpy = new bootstrap.ScrollSpy(document.body, {
             target: '#navbar-example3',
             offset: 80
         });
 
-        // Update progress indicator
         const sections = document.querySelectorAll('section[id]');
         const progressDots = document.querySelectorAll('.progress-dot');
 
@@ -584,14 +556,12 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             });
         }
 
-        // Navbar scroll effect
         window.addEventListener('scroll', () => {
             const navbar = document.querySelector('#navbar-example3');
             navbar.classList.toggle('scrolled', window.scrollY > 100);
             updateProgressIndicator();
         });
 
-        // Smooth scroll for progress dots
         progressDots.forEach(dot => {
             dot.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -602,7 +572,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             });
         });
 
-        // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 if (this.getAttribute('href') === '#') return;
@@ -618,13 +587,11 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             });
         });
 
-        // Tooltip initialization
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
-        // ── Lightbox Gallery Functionality ──
         const aircraftImages = {
             cessna: [
                 'assets/img/cessna01/CESSNA 206-1.png',
@@ -686,7 +653,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             }
         }
 
-        // Close lightbox when clicking outside image
         document.querySelectorAll('.lightbox').forEach(lightbox => {
             lightbox.addEventListener('click', (e) => {
                 if (e.target === lightbox) {
@@ -696,7 +662,6 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             });
         });
 
-        // Keyboard navigation for lightbox
         document.addEventListener('keydown', (e) => {
             const activeLightbox = document.querySelector('.lightbox[style*="display: flex"]');
             if (!activeLightbox) return;
@@ -712,13 +677,13 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
             }
         });
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             updateProgressIndicator();
         });
     </script>
 
     <?php include_once 'integrations/aiChat/chatbotWidget.php'; ?>
+
 </body>
 
 </html>

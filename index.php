@@ -118,7 +118,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
 
     <!-- Navigation with Scrollspy -->
     <nav id="navbar-example3" class="navbar navbar-expand-lg fixed-top">
-        <div class="container-fluid px-4 px-lg-5">
+        <div class="container-fluid px-3 px-lg-4">
             <!-- Brand / Logo -->
             <a class="navbar-brand d-flex align-items-center" href="#home">
                 <img src="assets/img/logo.png" alt="AirLyft Logo" class="nav-logo" loading="lazy">

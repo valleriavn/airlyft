@@ -70,12 +70,39 @@ if ($user_id) {
                     </div>
                     <div class="message-bubble agent-bubble">
                         <?php if ($is_logged_in && $first_name): ?>
-                            <p>Hello <strong><?= htmlspecialchars($first_name) ?></strong>! I'm Horizon, your AirLyft travel assistant. How can I help you? (Recommend destination and assist booking)</p>
+                            <p>Hello <strong><?= htmlspecialchars($first_name) ?></strong>! I am Horizon, your AirLyft travel assistant. I am here to provide destination recommendations and assist with your booking. How may I be of service?</p>
                         <?php else: ?>
                             <p>Greetings! I am Horizon, your AirLyft Luxury Travel Assistant. How may I help you with destination recommendations or booking assistance today?</p>
                         <?php endif; ?>
                     </div>
                 </div>
+            </div>
+
+            <div class="initial-quick-replies" id="initial-quick-replies">
+                <button class="quick-reply-btn" data-message="I want to book a trip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19V0h-2v2H7V0H5v2H3.5C2.67 2 2 2.67 2 3.5v17C2 21.33 2.67 22 3.5 22h17c.83 0 1.5-.67 1.5-1.5v-17C22 2.67 21.33 2 20.5 2z" />
+                    </svg>
+                    Book a Trip
+                </button>
+                <button class="quick-reply-btn" data-message="Show me destinations">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                    </svg>
+                    View Destinations
+                </button>
+                <button class="quick-reply-btn" data-message="How much does it cost?">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" />
+                    </svg>
+                    Check Pricing
+                </button>
+                <button class="quick-reply-btn" data-message="What aircraft do you have?">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                    </svg>
+                    View Aircraft
+                </button>
             </div>
         </div>
 
@@ -715,6 +742,59 @@ if ($user_id) {
             box-shadow: 0 4px 10px rgba(0, 82, 204, 0.3);
         }
 
+        .initial-quick-replies {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--primary-light);
+            border-radius: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .initial-quick-replies.hidden {
+            display: none;
+        }
+
+        .quick-reply-btn {
+            padding: 12px 16px;
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-reply-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(4px);
+            box-shadow: 0 4px 8px rgba(0, 82, 204, 0.2);
+        }
+
+        .quick-reply-btn:active {
+            transform: translateX(2px);
+        }
+
+        .quick-reply-btn svg {
+            flex-shrink: 0;
+            opacity: 0.8;
+        }
+
+        .quick-reply-btn:hover svg {
+            opacity: 1;
+        }
+
         .ai-setup-modal {
             display: none;
             position: fixed;
@@ -1242,9 +1322,27 @@ if ($user_id) {
                 });
             }
 
+            // Quick reply button handlers
+            const quickReplyBtns = document.querySelectorAll('.quick-reply-btn');
+            quickReplyBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const message = this.getAttribute('data-message');
+                    if (message && chatInput) {
+                        chatInput.value = message;
+                        sendMessage();
+                    }
+                });
+            });
+
             async function sendMessage() {
                 const message = chatInput.value.trim();
                 if (!message) return;
+
+                // Hide initial quick replies after first user message
+                const initialReplies = document.getElementById('initial-quick-replies');
+                if (initialReplies && !initialReplies.classList.contains('hidden')) {
+                    initialReplies.classList.add('hidden');
+                }
 
                 addMessage(message, 'user');
                 chatInput.value = '';
@@ -1274,8 +1372,13 @@ if ($user_id) {
 
                     removeTyping();
                     if (data && data.success) {
+                        // Remove any existing quick actions before adding new ones
+                        const existingActions = document.querySelectorAll('.quick-actions');
+                        existingActions.forEach(el => el.remove());
+
                         addMessage(data.reply || '', 'agent', true);
-                        if (data.quick_actions && data.quick_actions.length > 0) {
+                        // Only show quick actions if they exist and are meaningful
+                        if (data.quick_actions && Array.isArray(data.quick_actions) && data.quick_actions.length > 0) {
                             addQuickActions(data.quick_actions);
                         }
                     } else {

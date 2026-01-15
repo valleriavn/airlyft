@@ -47,7 +47,16 @@ function handleChatRequest()
         $user_message = strip_tags($user_message);
         $user_message = preg_replace('/[^\p{L}\p{N}\s.,!?\-:;()]/u', '', $user_message);
 
-        if (empty($user_message) || strlen($user_message) < 2) {
+        // Check if message is empty or just whitespace
+        if (empty($user_message) || trim($user_message) === '') {
+            return ['success' => false, 'reply' => 'Please enter a message.'];
+        }
+
+        // Accept numbers (for passenger counts) and short valid answers
+        $is_number = preg_match('/^\d+$/', $user_message); // Just digits
+        $is_valid_short = strlen($user_message) >= 1 && ($is_number || strlen($user_message) >= 2);
+
+        if (!$is_valid_short) {
             return ['success' => false, 'reply' => 'Please enter a message.'];
         }
 
@@ -55,8 +64,12 @@ function handleChatRequest()
             return ['success' => false, 'reply' => 'Message too long. Please keep it under 500 characters.'];
         }
 
+        // Check if this is a follow-up answer (number or short response)
+        $is_followup_answer = isFollowUpAnswer($user_message);
+
+        // If it's a follow-up answer or AirLyft related, process it
         $airlyftCheck = isAirLyftRelated($user_message);
-        if (!$airlyftCheck['is_airlyft']) {
+        if (!$airlyftCheck['is_airlyft'] && !$is_followup_answer) {
             return [
                 'success' => true,
                 'reply' => getAirLyftOnlyMessage(),
@@ -69,6 +82,23 @@ function handleChatRequest()
 
         if ($user_id) {
             storeChatMessage($user_id, 'user', $user_message_clean, $conn);
+        }
+
+        // Handle follow-up answers (like passenger counts)
+        if ($is_followup_answer) {
+            $followup_response = handleFollowUpAnswer($user_message, $bookingHelper);
+            if ($followup_response) {
+                if ($user_id) {
+                    storeChatMessage($user_id, 'agent', $followup_response['reply'], $conn);
+                }
+                return [
+                    'success' => true,
+                    'reply' => $followup_response['reply'],
+                    'agent' => 'Horizon',
+                    'ai_mode' => 'followup',
+                    'quick_actions' => []
+                ];
+            }
         }
 
         $intent = detectQuestionIntent($user_message);
@@ -94,28 +124,32 @@ function handleChatRequest()
             $ai_response['reply'] = "I'm here to help with AirLyft travel. What would you like to know?";
         }
 
-        $reply_clean = htmlspecialchars($ai_response['reply'], ENT_QUOTES, 'UTF-8');
+        // Final cleaning and validation
+        $reply_clean = $ai_response['reply'];
+        $reply_clean = htmlspecialchars($reply_clean, ENT_QUOTES, 'UTF-8');
         $reply_clean = preg_replace('/\s+/', ' ', $reply_clean);
         $reply_clean = trim($reply_clean);
+
+        // Ensure readable length
+        if (strlen($reply_clean) > 450) {
+            $cut = substr($reply_clean, 0, 447);
+            $last_period = strrpos($cut, '.');
+            if ($last_period > 200) {
+                $reply_clean = substr($reply_clean, 0, $last_period + 1);
+            } else {
+                $reply_clean = substr($reply_clean, 0, 447) . '...';
+            }
+        }
 
         if ($user_id) {
             storeChatMessage($user_id, 'agent', $reply_clean, $conn, $ai_response['is_fallback']);
         }
 
-        $quick_actions = [];
-        if (!empty($ai_response['quick_actions']) && is_array($ai_response['quick_actions'])) {
-            foreach ($ai_response['quick_actions'] as $action) {
-                $action_clean = trim(strip_tags($action));
-                if (strlen($action_clean) > 0 && strlen($action_clean) <= 30) {
-                    $quick_actions[] = $action_clean;
-                }
-            }
-        }
-
+        // Remove all quick actions - user only wants initial quick replies, not contextual buttons
         return [
             'success' => true,
             'reply' => $reply_clean,
-            'quick_actions' => array_slice($quick_actions, 0, 1),
+            'quick_actions' => [],
             'agent' => 'Horizon',
             'ai_mode' => $ai_response['mode'] ?? 'fallback',
             'fallback' => $ai_response['is_fallback'] ?? true,
@@ -194,8 +228,6 @@ function getAIResponseWithFallback($question, $user_id, $bookingHelper, $intent,
 
 function getOllamaResponse($question, $user_id, $bookingHelper, $intent)
 {
-    error_log("🔍 Checking Ollama...");
-
     if (!isOllamaAvailable()) {
         return ['success' => false];
     }
@@ -211,28 +243,23 @@ function getOllamaResponse($question, $user_id, $bookingHelper, $intent)
     }
 
     $prompt = buildConversationalPrompt($knowledge, $question, $bookingHelper, $intent);
-    error_log("📝 Building conversational prompt");
 
-    $models = ['mistral:latest', 'gemma3:4b', 'llama3.2:latest'];
+    // Try only the fastest model first - if unavailable, fallback is faster
+    $model = 'mistral:latest';
+    $raw_reply = callOllamaAPI($prompt, $model);
 
-    foreach ($models as $model) {
-        error_log("🔄 Trying: $model");
-        $raw_reply = callOllamaAPI($prompt, $model);
+    if ($raw_reply) {
+        $clean_reply = cleanAIResponse($raw_reply);
 
-        if ($raw_reply) {
-            $clean_reply = cleanAIResponse($raw_reply);
+        if (isValidResponse($clean_reply, $question)) {
+            $quick_actions = extractQuickActions($clean_reply, $intent);
 
-            if (isValidResponse($clean_reply, $question)) {
-                error_log("✅ Response OK");
-                $quick_actions = extractQuickActions($clean_reply, $intent);
-
-                return [
-                    'success' => true,
-                    'reply' => $clean_reply,
-                    'model' => $model,
-                    'quick_actions' => $quick_actions
-                ];
-            }
+            return [
+                'success' => true,
+                'reply' => $clean_reply,
+                'model' => $model,
+                'quick_actions' => $quick_actions
+            ];
         }
     }
 
@@ -244,25 +271,28 @@ function buildConversationalPrompt($knowledge, $question, $bookingHelper, $inten
     $user_name = $bookingHelper->getUserFirstName() ?? "Guest";
 
     return <<<PROMPT
-You are Horizon, AirLyft's AI travel assistant. Be concise but detailed.
+You are Horizon, AirLyft's AI travel assistant. Answer concisely with short, clear sentences.
 
 USER: $user_name
 INTENT: $intent
 QUESTION: "$question"
 
 RULES:
-- Keep responses under 120 words
-- Provide specific details: destination names, aircraft types, prices, features
-- Answer the question directly with relevant facts
-- Include key information: flight duration, capacity, unique features
-- Be friendly but professional
-- Only mention AirLyft services from the knowledge base
-- Use clear, simple language
+- Maximum 80 words total, be brief and relevant
+- Write in short sentences, maximum 20 words per sentence
+- Use periods to separate ideas, not commas for long lists
+- No special characters, no markdown, no emojis, no symbols
+- No bold text, no asterisks, no dashes for lists
+- Answer directly with specific facts from knowledge base
+- Include key details: names, prices, durations, capacities
+- Be professional and friendly
+- Only use information from the knowledge base below
+- Write in plain English, simple sentences
 
 KNOWLEDGE:
 $knowledge
 
-Respond with concise but detailed information. Include specific facts and numbers.
+Provide a concise answer with short, readable sentences separated by periods.
 PROMPT;
 }
 
@@ -274,11 +304,11 @@ function callOllamaAPI($prompt, $model = 'mistral:latest')
         'prompt' => $prompt,
         'stream' => false,
         'options' => [
-            'temperature' => 0.4,
-            'top_p' => 0.85,
-            'num_predict' => 300,
-            'repeat_penalty' => 1.15,
-            'top_k' => 30
+            'temperature' => 0.3,
+            'top_p' => 0.9,
+            'num_predict' => 150,
+            'repeat_penalty' => 1.2,
+            'top_k' => 40
         ]
     ];
 
@@ -288,8 +318,8 @@ function callOllamaAPI($prompt, $model = 'mistral:latest')
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($payload),
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 2,
         CURLOPT_NOSIGNAL => 1
     ]);
 
@@ -315,8 +345,8 @@ function isOllamaAvailable()
     $ch = curl_init('http://127.0.0.1:11434/api/tags');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 5,
-        CURLOPT_CONNECTTIMEOUT => 3
+        CURLOPT_TIMEOUT => 2,
+        CURLOPT_CONNECTTIMEOUT => 1
     ]);
 
     $response = curl_exec($ch);
@@ -331,19 +361,94 @@ function cleanAIResponse($response)
 {
     if (empty($response)) return '';
 
-    $response = trim($response);
-    $response = preg_replace('/^(Assistant:|Horizon:|Based on|According to|I can|I\'m).{0,80}/mi', '', $response);
-    $response = preg_replace('/\n{3,}/', "\n\n", $response);
-    $response = preg_replace('/\n{2,}/', "\n", $response);
-    $response = str_replace(['* ', '- ', '• '], '', $response);
-    $response = preg_replace('/\s+/', ' ', $response);
+    // Remove common prefixes
+    $response = preg_replace('/^(Assistant:|Horizon:|Based on|According to|I can|I\'m|Here\'s|Sure,|Of course).{0,100}/mi', '', $response);
 
-    if (strlen($response) > 500) {
-        $response = substr($response, 0, 497) . '...';
+    // Remove markdown formatting
+    $response = preg_replace('/\*\*(.*?)\*\*/', '$1', $response); // Bold
+    $response = preg_replace('/\*(.*?)\*/', '$1', $response); // Italic
+    $response = preg_replace('/`(.*?)`/', '$1', $response); // Code
+    $response = preg_replace('/\[(.*?)\]\(.*?\)/', '$1', $response); // Links
+
+    // Remove list markers and special characters
+    $response = str_replace(['* ', '- ', '• ', '→', '→ ', '✓', '✗', '•', '▪', '▸'], '', $response);
+
+    // Remove emojis and special unicode characters
+    $response = preg_replace('/[\x{1F600}-\x{1F64F}]/u', '', $response); // Emoticons
+    $response = preg_replace('/[\x{1F300}-\x{1F5FF}]/u', '', $response); // Misc Symbols
+    $response = preg_replace('/[\x{1F680}-\x{1F6FF}]/u', '', $response); // Transport
+    $response = preg_replace('/[\x{2600}-\x{26FF}]/u', '', $response); // Misc symbols
+    $response = preg_replace('/[\x{2700}-\x{27BF}]/u', '', $response); // Dingbats
+
+    // Remove multiple newlines and convert to spaces first
+    $response = preg_replace('/\n{2,}/', '. ', $response);
+    $response = preg_replace('/\n/', ' ', $response);
+
+    // Remove special characters except basic punctuation
+    $response = preg_replace('/[^\p{L}\p{N}\s.,!?;:()\-\'\"]/u', '', $response);
+
+    // Clean up extra spaces
+    $response = preg_replace('/\s+/', ' ', $response);
+    $response = trim($response);
+
+    // Break long sentences into shorter, more readable sentences
+    // Split on periods followed by spaces, but keep sentences together if too short
+    $sentences = preg_split('/[.!?]+\s+/', $response, -1, PREG_SPLIT_NO_EMPTY);
+    $formatted_sentences = [];
+
+    foreach ($sentences as $sentence) {
+        $sentence = trim($sentence);
+        if (empty($sentence)) continue;
+
+        // Capitalize first letter
+        $sentence = ucfirst($sentence);
+
+        // If sentence is too long (over 120 chars), try to break at commas
+        if (strlen($sentence) > 120) {
+            $parts = preg_split('/,\s+/', $sentence);
+            $current = '';
+            foreach ($parts as $part) {
+                if (strlen($current . $part) > 120 && !empty($current)) {
+                    $formatted_sentences[] = trim($current) . '.';
+                    $current = $part;
+                } else {
+                    $current .= ($current ? ', ' : '') . $part;
+                }
+            }
+            if (!empty($current)) {
+                $formatted_sentences[] = trim($current) . '.';
+            }
+        } else {
+            $formatted_sentences[] = $sentence . '.';
+        }
     }
 
-    if (!preg_match('/[.!?]\s*$/', $response)) {
+    $response = implode(' ', $formatted_sentences);
+    $response = preg_replace('/\.+/', '.', $response); // Remove multiple periods
+    $response = preg_replace('/\s+/', ' ', $response); // Clean spaces again
+    $response = trim($response);
+
+    // Limit total length to 350 characters for concise responses
+    if (strlen($response) > 350) {
+        // Try to cut at sentence boundary
+        $cut = substr($response, 0, 350);
+        $last_period = strrpos($cut, '.');
+
+        if ($last_period > 200) {
+            $response = substr($response, 0, $last_period + 1);
+        } else {
+            $response = substr($response, 0, 347) . '...';
+        }
+    }
+
+    // Ensure proper sentence ending
+    if (!empty($response) && !preg_match('/[.!?]\s*$/', $response)) {
         $response .= '.';
+    }
+
+    // Ensure first letter is capitalized
+    if (!empty($response)) {
+        $response = ucfirst(trim($response));
     }
 
     return trim($response);
@@ -351,8 +456,14 @@ function cleanAIResponse($response)
 
 function isValidResponse($response, $question)
 {
-    if (empty($response) || strlen($response) < 20) return false;
-    if (strlen($response) > 600) return false;
+    if (empty($response) || strlen($response) < 15) return false;
+    if (strlen($response) > 450) return false;
+
+    // Must have at least one sentence with proper ending
+    if (!preg_match('/[.!?]/', $response)) return false;
+
+    // Must have readable structure (at least one space suggests words)
+    if (substr_count($response, ' ') < 2) return false;
 
     $lower = strtolower($response);
     $lower_question = strtolower($question);
@@ -363,7 +474,9 @@ function isValidResponse($response, $question)
         strpos($lower, 'aircraft') !== false ||
         strpos($lower, 'booking') !== false ||
         strpos($lower, 'flight') !== false ||
-        strpos($lower, 'travel') !== false
+        strpos($lower, 'travel') !== false ||
+        strpos($lower, 'trip') !== false ||
+        strpos($lower, 'resort') !== false
     );
 
     $has_question_words = (
@@ -379,32 +492,9 @@ function isValidResponse($response, $question)
 
 function extractQuickActions($response, $intent)
 {
-    $actions = [];
-
-    if (preg_match_all('/\[([^\]]+)\]/', $response, $matches)) {
-        foreach ($matches[1] as $action) {
-            if (strlen($action) <= 25) {
-                $actions[] = trim($action);
-            }
-        }
-    }
-
-    if (empty($actions) && in_array($intent, ['BOOKING', 'BOOKING_PROCESS', 'DESTINATION_INQUIRY', 'PRICING_INQUIRY'])) {
-        switch ($intent) {
-            case 'BOOKING':
-            case 'BOOKING_PROCESS':
-                $actions = ['Start Booking'];
-                break;
-            case 'PRICING_INQUIRY':
-                $actions = ['Get Quote'];
-                break;
-            case 'DESTINATION_INQUIRY':
-                $actions = ['View Destinations'];
-                break;
-        }
-    }
-
-    return array_slice($actions, 0, 1);
+    // User only wants initial quick replies, no contextual buttons
+    // Always return empty array
+    return [];
 }
 
 // ===== VAGUE QUESTION DETECTION =====
@@ -412,42 +502,63 @@ function isVagueQuestion($message, $intent)
 {
     $lower = strtolower(trim($message));
 
+    // If intent is detected, it's not vague
+    if ($intent !== 'GENERAL') {
+        // Check if message has clear context even with intent
+        if (preg_match('/\b(about|tell me about|info|information|details|explain|what is|show me|give me)\b.*\b(price|pricing|cost|aircraft|destination|booking|flight|trip)\b/', $lower)) {
+            return false; // Has clear topic with context
+        }
+    }
+
+    // Very short messages without context
     if (strlen($message) < 5 || preg_match('/^(help|what|where|when|why|how|hello|hi|hey)$/i', $lower)) {
         return true;
     }
 
+    // Patterns that are vague only if no clear topic
     $vague_patterns = [
-        '/^(tell|give|show|find).{0,25}$/i',
-        '/^(what|which|do you).{0,15}$/i',
-        '/^(i want|i need|i\'m looking).{0,10}$/i'
+        '/^(tell|give|show|find)\s+(me)?\s*$/i', // "tell me", "show" without topic
+        '/^(what|which|do you)\s*$/i', // Just "what" or "which" alone
+        '/^(i want|i need|i\'m looking)\s*$/i' // Without what they're looking for
     ];
 
     foreach ($vague_patterns as $pattern) {
         if (preg_match($pattern, $lower)) return true;
     }
 
-    return false;
+    // Check if message has a clear topic word
+    $clear_topics = ['price', 'pricing', 'cost', 'aircraft', 'destination', 'booking', 'flight', 'trip', 'resort', 'island', 'honeymoon', 'family'];
+    foreach ($clear_topics as $topic) {
+        if (strpos($lower, $topic) !== false) {
+            return false; // Has a clear topic, not vague
+        }
+    }
+
+    return false; // Default to not vague if we can't determine
 }
 
 function detectQuestionIntent($question)
 {
-    $lower = strtolower($question);
+    $lower = strtolower(trim($question));
 
+    // Order matters - more specific first
     if (preg_match('/honeymoon|romantic|anniversary/', $lower)) return 'HONEYMOON';
     if (preg_match('/family|kids|children|group/', $lower)) return 'FAMILY';
     if (preg_match('/corporate|business|executive/', $lower)) return 'CORPORATE';
     if (preg_match('/wellness|detox|yoga|meditation/', $lower)) return 'WELLNESS';
-    if (preg_match('/book|reserve|how.*book/', $lower)) return 'BOOKING';
-    if (preg_match('/price|cost|rate|quote|expensive/', $lower)) return 'PRICING';
-    if (preg_match('/aircraft|plane|helicopter|fleet/', $lower)) return 'AIRCRAFT';
-    if (preg_match('/destination|where|island|location/', $lower)) return 'DESTINATION';
+    if (preg_match('/\b(price|pricing|cost|costs|rate|rates|quote|quotes|fare|fares|expensive|budget|how much|what.*cost|tell me.*price|about.*price)\b/', $lower)) return 'PRICING';
+    if (preg_match('/\b(book|booking|reserve|reservation|how.*book|how.*reserve|booking.*process|reservation.*process)\b/', $lower)) return 'BOOKING';
+    if (preg_match('/\b(aircraft|airplane|plane|planes|helicopter|helicopters|fleet|aircraft.*type|which.*aircraft)\b/', $lower)) return 'AIRCRAFT';
+    if (preg_match('/\b(destination|destinations|where.*go|which.*destination|location|place|places|island|resort|resorts|show.*destination|view.*destination|tell me.*destination)\b/', $lower)) return 'DESTINATION';
 
     return 'GENERAL';
 }
 
 function isAirLyftRelated($message)
 {
-    $lower = strtolower($message);
+    $lower = strtolower(trim($message));
+
+    // First check for clear travel/service keywords
     $keywords = [
         'airlyft',
         'booking',
@@ -470,21 +581,146 @@ function isAirLyftRelated($message)
         'luxury',
         'trip',
         'travel',
-        'book'
+        'book',
+        'pricing',
+        'price',
+        'cost',
+        'fare',
+        'rate',
+        'quote',
+        'airport',
+        'plane',
+        'jet',
+        'rotor',
+        'turboprop',
+        'boracay',
+        'siargao',
+        'bohol',
+        'baguio',
+        'coron'
     ];
 
     foreach ($keywords as $kw) {
         if (strpos($lower, $kw) !== false) return ['is_airlyft' => true];
     }
 
+    // Check for question patterns about travel services
+    $travel_patterns = [
+        '/\b(how much|what.*cost|tell me.*price|about.*price|pricing.*info)\b/',
+        '/\b(where.*go|which.*destination|show.*places|view.*resort)\b/',
+        '/\b(what.*aircraft|which.*plane|how.*book|booking.*process)\b/',
+        '/\b(romantic.*getaway|family.*vacation|corporate.*trip)\b/'
+    ];
+
+    foreach ($travel_patterns as $pattern) {
+        if (preg_match($pattern, $lower)) return ['is_airlyft' => true];
+    }
+
     return ['is_airlyft' => false];
+}
+
+function isFollowUpAnswer($message)
+{
+    $lower = strtolower(trim($message));
+
+    // Check for affirmative/negative responses
+    $affirmative = ['yes', 'yeah', 'yep', 'yup', 'sure', 'okay', 'ok', 'alright', 'absolutely', 'definitely', 'of course', 'certainly'];
+    $negative = ['no', 'nope', 'nah', 'not really', "don't", 'dont'];
+
+    if (in_array($lower, $affirmative) || in_array($lower, $negative)) {
+        return true;
+    }
+
+    // Check for affirmative patterns
+    if (preg_match('/^(yes|yeah|yep|yup|sure|okay|ok|alright|absolutely|definitely|of course|certainly)\b/i', $lower)) {
+        return true;
+    }
+
+    // Check if it's a number (potential passenger count)
+    if (preg_match('/^\d+$/', $message)) {
+        $num = (int)$message;
+        // Valid passenger count range
+        if ($num >= 1 && $num <= 20) {
+            return true;
+        }
+    }
+
+    // Check for patterns that indicate follow-up answers
+    $followup_patterns = [
+        '/^\d+\s*(people|person|passengers?|guests?|travelers?|will be|would be|traveling|travelling)\b/i',
+        '/\b\d+\s*(people|person|passengers?|guests?|travelers?)\b/i',
+        '/\b(just|only|about|around|approximately)\s+\d+/i',
+        '/^\d+\s*$/', // Just number with optional spaces
+    ];
+
+    foreach ($followup_patterns as $pattern) {
+        if (preg_match($pattern, $message)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function handleFollowUpAnswer($message, $bookingHelper)
+{
+    $lower = strtolower(trim($message));
+    $user_name = $bookingHelper->getUserFirstName();
+    $greeting = $user_name ? "Hi $user_name! " : "";
+
+    // Handle affirmative responses (yes, sure, okay, etc.)
+    if (preg_match('/^(yes|yeah|yep|yup|sure|okay|ok|alright|absolutely|definitely|of course|certainly)\b/i', $lower)) {
+        // When user says yes to booking, guide them to start the booking process
+        return [
+            'reply' => $greeting . "Excellent! Let's start your booking. First, please visit our booking page or tell me which destination you'd like to visit. We have twelve destinations available including Amanpulo in Palawan, Balesin Island, Boracay, Siargao, and more. Which destination interests you?",
+            'quick_actions' => []
+        ];
+    }
+
+    // Handle negative responses (no, nope, etc.)
+    if (preg_match('/^(no|nope|nah|not really|not yet)\b/i', $lower)) {
+        return [
+            'reply' => $greeting . "No problem! Take your time to explore our destinations and aircraft options. Feel free to ask me about pricing, destinations, aircraft types, or anything else about AirLyft travel. What would you like to know?",
+            'quick_actions' => []
+        ];
+    }
+
+    // Extract number from message
+    preg_match('/\d+/', $message, $matches);
+    $count = isset($matches[0]) ? (int)$matches[0] : 0;
+
+    if ($count >= 1 && $count <= 20) {
+        // Provide aircraft recommendations based on passenger count
+        if ($count <= 5) {
+            return [
+                'reply' => $greeting . "Great! For {$count} " . ($count == 1 ? 'person' : 'people') . ", I recommend the Cessna 206. It accommodates up to 5 passengers and is economical for short routes. The Airbus H160 helicopter is also suitable for 1 to 8 passengers with luxury amenities. Which destination are you interested in?",
+                'quick_actions' => []
+            ];
+        } elseif ($count <= 8) {
+            return [
+                'reply' => $greeting . "Perfect! For {$count} people, I recommend the Airbus H160 helicopter. It accommodates 1 to 8 passengers with luxury panoramic windows. The Sikorsky S-76D is also suitable for 1 to 6 passengers for executive travel. Which destination interests you?",
+                'quick_actions' => []
+            ];
+        } elseif ($count <= 10) {
+            return [
+                'reply' => $greeting . "Excellent! For {$count} people, I recommend the Cessna Grand Caravan EX. It is a spacious turboprop that accommodates 6 to 10 passengers, perfect for groups. Which destination would you like to visit?",
+                'quick_actions' => []
+            ];
+        } else {
+            return [
+                'reply' => $greeting . "For {$count} people, you would need multiple aircraft or the Cessna Grand Caravan EX which handles up to 10 passengers. Groups larger than 10 may require splitting across multiple flights. Please contact us for custom arrangements. Which destination are you planning to visit?",
+                'quick_actions' => []
+            ];
+        }
+    }
+
+    // If it's not a valid number or pattern, return null to continue normal processing
+    return null;
 }
 
 function getAirLyftOnlyMessage()
 {
-    return "I only help with AirLyft luxury travel. 🏝️\n\n" .
-        "I can tell you about our destinations, aircraft, booking process, and pricing.\n\n" .
-        "What would you like to know?";
+    return "I only help with AirLyft luxury travel. I can tell you about our destinations, aircraft, booking process, and pricing. What would you like to know?";
 }
 
 function getConversationalFallback($question, $bookingHelper, $intent)
@@ -495,46 +731,47 @@ function getConversationalFallback($question, $bookingHelper, $intent)
 
     if (preg_match('/honeymoon|romantic|anniversary|couple/', $lower)) {
         return [
-            'reply' => $greeting . "For a romantic getaway, I recommend **Amanpulo in Palawan** – a private island with butler service, powder-white sand, and secluded villas. Flight time: 50 minutes from Manila. **Huma Island Resort** offers overwater villas with direct water access. **Amorita Resort** in Bohol features infinity pools and panoramic ocean views. Which destination interests you?",
-            'quick_actions' => ['Start Booking']
+            'reply' => $greeting . "For a romantic getaway, I recommend Amanpulo in Palawan. It is a private island with butler service, powder-white sand, and secluded villas. Flight time is 50 minutes from Manila. Huma Island Resort offers overwater villas with direct water access. Amorita Resort in Bohol features infinity pools and panoramic ocean views. Which destination interests you?",
+            'quick_actions' => []
         ];
     }
 
     if (preg_match('/family|kids|children|group travel/', $lower)) {
         return [
-            'reply' => $greeting . "**Balesin Island** features 7 themed villages (Greek, Thai, Bali, Italian, French, Swiss, Philippine) perfect for families. **Shangri-La Boracay** offers kids' activities, water sports, and multiple pools. Both accommodate large groups. How many people would be traveling?",
-            'quick_actions' => ['View Destinations']
+            'reply' => $greeting . "Balesin Island features seven themed villages perfect for families. These include Greek, Thai, Bali, Italian, French, Swiss, and Philippine themes. Shangri-La Boracay offers kids activities, water sports, and multiple pools. Both accommodate large groups. How many people would be traveling?",
+            'quick_actions' => []
         ];
     }
 
     if (preg_match('/book|reserve|how.*book|process|steps/', $lower)) {
         return [
-            'reply' => $greeting . "Booking process: 1) Choose destination (12 options), 2) Select aircraft (4 types), 3) Pick dates, 4) Add passenger details, 5) Get quote, 6) Pay via PayPal, 7) Receive confirmation, 8) Enjoy door-to-resort service. Ready to start?",
-            'quick_actions' => ['Start Booking']
+            'reply' => $greeting . "The booking process is simple. First, choose from twelve destinations. Second, select from four aircraft types. Third, pick your dates. Fourth, add passenger details. Fifth, get your quote. Sixth, pay via PayPal. Seventh, receive confirmation. Finally, enjoy door-to-resort service. Ready to start?",
+            'quick_actions' => []
         ];
     }
 
-    if (preg_match('/price|cost|rate|how much|expensive|budget/', $lower)) {
+    if (preg_match('/\b(price|pricing|cost|costs|rate|rates|how much|what.*cost|expensive|budget|tell me.*price|about.*price)\b/', $lower)) {
         return [
-            'reply' => $greeting . "Aircraft pricing: **Cessna 206** from ₱45,000 (1-5 passengers, 1,000km range), **Grand Caravan** from ₱85,000 (6-10 passengers, 1,700km range), **Airbus H160** from ₱120,000 (1-8 passengers, luxury helicopter), **Sikorsky S-76D** from ₱150,000 (1-6 passengers, executive). Which aircraft fits your group?",
-            'quick_actions' => ['Get Quote']
+            'reply' => $greeting . "Aircraft pricing starts from different rates. The Cessna 206 is from 45,000 pesos for 1 to 5 passengers with 1,000 kilometer range. The Grand Caravan is from 85,000 pesos for 6 to 10 passengers with 1,700 kilometer range. The Airbus H160 is from 120,000 pesos for 1 to 8 passengers, luxury helicopter. The Sikorsky S-76D is from 150,000 pesos for 1 to 6 passengers, executive class. Which aircraft fits your group?",
+            'quick_actions' => []
         ];
     }
 
     if (preg_match('/aircraft|plane|helicopter|fleet|vehicle/', $lower)) {
         return [
-            'reply' => $greeting . "We have 4 aircraft: **Cessna 206** (single-engine, 1-5 people, economical), **Grand Caravan EX** (turboprop, 6-10 people, spacious), **Airbus H160** (twin-engine helicopter, 1-8 people, luxury with panoramic windows), **Sikorsky S-76D** (twin-engine helicopter, 1-6 people, executive comfort). Which fits your travel needs?",
-            'quick_actions' => ['View Fleet']
+            'reply' => $greeting . "We have four aircraft types. The Cessna 206 is a single-engine aircraft for 1 to 5 people, economical for short routes. The Grand Caravan EX is a turboprop for 6 to 10 people, spacious for groups. The Airbus H160 is a luxury twin-engine helicopter for 1 to 8 people with panoramic windows. The Sikorsky S-76D is an executive twin-engine helicopter for 1 to 6 people. Which fits your travel needs?",
+            'quick_actions' => []
         ];
     }
 
     if (preg_match('/destination|where|island|location|place/', $lower)) {
         return [
-            'reply' => $greeting . "We serve 12 destinations: **Amanpulo** (Palawan - private island), **Boracay** (beach paradise), **Siargao** (surfing and eco-resorts), **Baguio** (cool mountains), **Balesin Island** (7 themed villages), **Huma Island** (overwater villas), plus 6 more. What type of experience are you looking for?",
-            'quick_actions' => ['View Destinations']
+            'reply' => $greeting . "We serve twelve destinations. Amanpulo in Palawan is a private island. Boracay is a beach paradise. Siargao offers surfing and eco-resorts. Baguio provides cool mountain climate. Balesin Island has seven themed villages. Huma Island features overwater villas. We have six more destinations available. What type of experience are you looking for?",
+            'quick_actions' => []
         ];
     }
 
+    // General queries - no quick action, let conversation flow naturally
     return [
         'reply' => $greeting . "I'm here to help with AirLyft travel! What would you like to know about our destinations, aircraft, or booking process?",
         'quick_actions' => []

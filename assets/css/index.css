@@ -403,11 +403,43 @@ h6 {
   flex-direction: column;
 }
 
+/* Add these styles to index.css for consistent lightbox images */
+
 .lightbox img {
   max-width: 90%;
   max-height: 80vh;
   border-radius: 8px;
   box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
+  object-fit: contain; /* Ensures images maintain aspect ratio */
+  background-color: #000; /* Black background for consistency */
+  width: auto; /* Allow natural width */
+  height: auto; /* Allow natural height */
+}
+
+/* Container for consistent image display */
+.lightbox-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 80vh;
+  padding: 20px;
+}
+
+/* For landscape-oriented images */
+.lightbox-image-landscape {
+  max-width: 90vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+}
+
+/* For portrait-oriented images */
+.lightbox-image-portrait {
+  max-width: 60vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
 }
 
 .lightbox-close {

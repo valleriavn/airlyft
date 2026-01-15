@@ -332,12 +332,13 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                 <p class="section-subtitle">Travel in unparalleled style, comfort and privacy with our modern fleet</p>
             </div>
 
+            <!-- ADDED: Row wrapper for grid layout -->
             <div class="row g-4 g-lg-5 justify-content-center fleet-row">
                 <!-- Cessna 206 -->
                 <div class="col-xl-6 col-lg-6 col-md-10">
                     <div class="fleet-card luxury-hover" onclick="openLightbox('cessna')">
                         <div class="fleet-image position-relative overflow-hidden">
-                            <img src="assets/img/aircraft/cessna206/CESSNA-206-1.png"
+                            <img src="assets/img/cessna01/CESSNA 206-1.png"
                                 alt="Cessna 206"
                                 loading="lazy"
                                 class="img-fluid transition-scale"
@@ -358,7 +359,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                 <div class="col-xl-6 col-lg-6 col-md-10">
                     <div class="fleet-card luxury-hover" onclick="openLightbox('caravan')">
                         <div class="fleet-image position-relative overflow-hidden">
-                            <img src="assets/img/aircraft/caravan/CESSNA-CARAVAN-1.png"
+                            <img src="assets/img/cessna02/CESSNA GRAND CARAVAN EX-1.png"
                                 alt="Cessna Grand Caravan EX"
                                 loading="lazy"
                                 class="img-fluid transition-scale"
@@ -379,7 +380,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                 <div class="col-xl-6 col-lg-6 col-md-10">
                     <div class="fleet-card luxury-hover" onclick="openLightbox('airbus')">
                         <div class="fleet-image position-relative overflow-hidden">
-                            <img src="assets/img/aircraft/airbus/AIRBUS-H160-1.png"
+                            <img src="assets/img/helicopter01/Airbus H160-1.png"
                                 alt="Airbus H160"
                                 loading="lazy"
                                 class="img-fluid transition-scale"
@@ -400,7 +401,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                 <div class="col-xl-6 col-lg-6 col-md-10">
                     <div class="fleet-card luxury-hover" onclick="openLightbox('sikorsky')">
                         <div class="fleet-image position-relative overflow-hidden">
-                            <img src="assets/img/aircraft/sikorsky/SIKORSKY-S76D-1.png"
+                            <img src="assets/img/helicopter02/Sikorsky S-76D-1.png"
                                 alt="Sikorsky S-76D"
                                 loading="lazy"
                                 class="img-fluid transition-scale"
@@ -417,6 +418,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                     </div>
                 </div>
             </div>
+            <!-- END Row wrapper -->
 
             <div class="text-center mt-5 pt-4">
                 <?php if ($isLoggedIn): ?>
@@ -504,10 +506,12 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         </div>
     </footer>
 
-    <!-- Lightbox Galleries -->
+    <!-- Lightbox Galleries with consistent sizing -->
     <div id="lightbox-cessna" class="lightbox">
         <span class="lightbox-close" onclick="closeLightbox('cessna')"><i class="bx bx-x"></i></span>
-        <img id="lightbox-img-cessna" src="" alt="Cessna 206 Gallery">
+        <div class="lightbox-image-container">
+            <img id="lightbox-img-cessna" src="" alt="Cessna 206 Gallery" class="lightbox-image-landscape">
+        </div>
         <div class="lightbox-controls">
             <button class="lightbox-arrow" onclick="prevImage('cessna')"><i class="bx bx-chevron-left"></i></button>
             <button class="lightbox-arrow" onclick="nextImage('cessna')"><i class="bx bx-chevron-right"></i></button>
@@ -516,7 +520,9 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
 
     <div id="lightbox-caravan" class="lightbox">
         <span class="lightbox-close" onclick="closeLightbox('caravan')"><i class="bx bx-x"></i></span>
-        <img id="lightbox-img-caravan" src="" alt="Cessna Grand Caravan EX Gallery">
+        <div class="lightbox-image-container">
+            <img id="lightbox-img-caravan" src="" alt="Cessna Grand Caravan EX Gallery" class="lightbox-image-landscape">
+        </div>
         <div class="lightbox-controls">
             <button class="lightbox-arrow" onclick="prevImage('caravan')"><i class="bx bx-chevron-left"></i></button>
             <button class="lightbox-arrow" onclick="nextImage('caravan')"><i class="bx bx-chevron-right"></i></button>
@@ -525,7 +531,9 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
 
     <div id="lightbox-airbus" class="lightbox">
         <span class="lightbox-close" onclick="closeLightbox('airbus')"><i class="bx bx-x"></i></span>
-        <img id="lightbox-img-airbus" src="" alt="Airbus H160 Gallery">
+        <div class="lightbox-image-container">
+            <img id="lightbox-img-airbus" src="" alt="Airbus H160 Gallery" class="lightbox-image-landscape">
+        </div>
         <div class="lightbox-controls">
             <button class="lightbox-arrow" onclick="prevImage('airbus')"><i class="bx bx-chevron-left"></i></button>
             <button class="lightbox-arrow" onclick="nextImage('airbus')"><i class="bx bx-chevron-right"></i></button>
@@ -534,7 +542,9 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
 
     <div id="lightbox-sikorsky" class="lightbox">
         <span class="lightbox-close" onclick="closeLightbox('sikorsky')"><i class="bx bx-x"></i></span>
-        <img id="lightbox-img-sikorsky" src="" alt="Sikorsky S-76D Gallery">
+        <div class="lightbox-image-container">
+            <img id="lightbox-img-sikorsky" src="" alt="Sikorsky S-76D Gallery" class="lightbox-image-landscape">
+        </div>
         <div class="lightbox-controls">
             <button class="lightbox-arrow" onclick="prevImage('sikorsky')"><i class="bx bx-chevron-left"></i></button>
             <button class="lightbox-arrow" onclick="nextImage('sikorsky')"><i class="bx bx-chevron-right"></i></button>
@@ -617,26 +627,26 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
         // ── Lightbox Gallery Functionality ──
         const aircraftImages = {
             cessna: [
-                'assets/img/aircraft/cessna206/CESSNA-206-1.png',
-                'assets/img/aircraft/cessna206/CESSNA-206-2.png',
-                'assets/img/aircraft/cessna206/CESSNA-206-3.png'
+                'assets/img/cessna01/CESSNA 206-1.png',
+                'assets/img/cessna01/CESSNA 206-2.png',
+                'assets/img/cessna01/CESSNA 206-3.png'
             ],
             caravan: [
-                'assets/img/aircraft/caravan/CESSNA-CARAVAN-1.png',
-                'assets/img/aircraft/caravan/CESSNA-CARAVAN-2.png',
-                'assets/img/aircraft/caravan/CESSNA-CARAVAN-3.png'
+                'assets/img/cessna02/CESSNA GRAND CARAVAN EX-1.png',
+                'assets/img/cessna02/CESSNA GRAND CARAVAN EX-2.png',
+                'assets/img/cessna02/CESSNA GRAND CARAVAN EX-3.png'
             ],
             airbus: [
-                'assets/img/aircraft/airbus/AIRBUS-H160-1.png',
-                'assets/img/aircraft/airbus/AIRBUS-H160-2.png',
-                'assets/img/aircraft/airbus/AIRBUS-H160-3.png',
-                'assets/img/aircraft/airbus/AIRBUS-H160-4.png'
+                'assets/img/helicopter01/Airbus H160-1.png',
+                'assets/img/helicopter01/Airbus H160-2.png',
+                'assets/img/helicopter01/Airbus H160-3.png',
+                'assets/img/helicopter01/Airbus H160-4.png'
             ],
             sikorsky: [
-                'assets/img/aircraft/sikorsky/SIKORSKY-S76D-1.png',
-                'assets/img/aircraft/sikorsky/SIKORSKY-S76D-2.png',
-                'assets/img/aircraft/sikorsky/SIKORSKY-S76D-3.png',
-                'assets/img/aircraft/sikorsky/SIKORSKY-S76D-4.png'
+                'assets/img/helicopter02/Sikorsky S-76D-1.png',
+                'assets/img/helicopter02/Sikorsky S-76D-2.png',
+                'assets/img/helicopter02/Sikorsky S-76D-3.png',
+                'assets/img/helicopter02/Sikorsky S-76D-4.png'
             ]
         };
 

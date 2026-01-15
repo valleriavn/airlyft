@@ -3,7 +3,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$ai_status = ['available' => false, 'mode' => 'fallback', 'models' => []];
 $user_id = $_SESSION['user_id'] ?? null;
 $is_logged_in = false;
 $first_name = null;
@@ -124,7 +123,7 @@ if ($user_id) {
 
 
             <div class="chat-footer">
-                <p class="footer-text">Powered by <strong>AirLyft Horizon</strong> <span id="setup-link-container" style="display: none;">• <a href="javascript:void(0)" onclick="showAISetupModal()">Setup Guide</a></span></p>
+                <p class="footer-text">Powered by <strong>AirLyft Horizon</strong> <span id="setup-link-container">• <a href="javascript:void(0)" onclick="showAISetupModal()">AI Setup</a></span></p>
             </div>
         </div>
     </div>
@@ -564,7 +563,6 @@ if ($user_id) {
         .message-bubble p:last-child {
             margin-bottom: 0;
         }
-
 
         .chat-actions {
             padding: 12px 20px;
@@ -1372,14 +1370,13 @@ if ($user_id) {
 
                     removeTyping();
                     if (data && data.success) {
-                        // Remove any existing quick actions before adding new ones
-                        const existingActions = document.querySelectorAll('.quick-actions');
-                        existingActions.forEach(el => el.remove());
-
                         addMessage(data.reply || '', 'agent', true);
-                        // Only show quick actions if they exist and are meaningful
-                        if (data.quick_actions && Array.isArray(data.quick_actions) && data.quick_actions.length > 0) {
-                            addQuickActions(data.quick_actions);
+
+                        // Show setup guide if AI is unavailable
+                        if (data.requires_setup) {
+                            setTimeout(() => {
+                                showAISetupModal();
+                            }, 500);
                         }
                     } else {
                         addMessage(data?.reply || 'Error occurred. Please try again.', 'agent', true);
@@ -1446,13 +1443,8 @@ if ($user_id) {
                 if (typing) typing.remove();
             }
 
-
             updateAIStatus();
-            setInterval(updateAIStatus, 5000);
-
-            setTimeout(() => {
-                updateAIStatus();
-            }, 1000);
+            setInterval(updateAIStatus, 30000); // Check every 30 seconds
 
             async function updateAIStatus() {
                 try {
@@ -1463,14 +1455,22 @@ if ($user_id) {
                     const setupLink = document.getElementById('setup-link-container');
 
                     if (headerStatus) {
-                        headerStatus.textContent = isOnline ? 'Ready to assist' : 'Available';
+                        headerStatus.textContent = isOnline ? 'AI Ready' : 'Basic Mode';
+                        headerStatus.style.color = isOnline ? '#10b981' : '#f59e0b';
                     }
 
                     if (setupLink) {
                         setupLink.style.display = isOnline ? 'none' : 'inline';
                     }
                 } catch (e) {
+                    const headerStatus = document.getElementById('header-status');
                     const setupLink = document.getElementById('setup-link-container');
+
+                    if (headerStatus) {
+                        headerStatus.textContent = 'Basic Mode';
+                        headerStatus.style.color = '#f59e0b';
+                    }
+
                     if (setupLink) {
                         setupLink.style.display = 'inline';
                     }
@@ -1514,34 +1514,11 @@ if ($user_id) {
                 document.getElementById('modal-ollama-status').textContent = isOnline ? '✓ Online' : '✗ Offline';
                 document.getElementById('modal-ollama-status').style.color = isOnline ? '#10b981' : '#ef4444';
                 document.getElementById('modal-ai-models').textContent = data?.ollama?.models?.length || 0;
-                document.getElementById('modal-ai-mode').textContent = isOnline ? 'AI' : 'Smart';
+                document.getElementById('modal-ai-mode').textContent = isOnline ? 'AI Mode' : 'Basic Mode';
                 document.getElementById('modal-ai-mode').style.color = isOnline ? '#10b981' : '#f59e0b';
             } catch (e) {
                 console.error('Status check error:', e);
             }
-        }
-
-        function addQuickActions(actions) {
-            if (!actions || actions.length === 0) return;
-
-            const chatMessages = document.getElementById('chat-messages');
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'quick-actions';
-
-            actions.slice(0, 1).forEach(action => {
-                const btn = document.createElement('button');
-                btn.className = 'quick-action-btn';
-                btn.textContent = action;
-                btn.onclick = () => {
-                    document.getElementById('chat-input').value = action;
-                    document.getElementById('send-btn').click();
-                    actionsDiv.remove();
-                };
-                actionsDiv.appendChild(btn);
-            });
-
-            chatMessages.appendChild(actionsDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         document.addEventListener('click', (e) => {
@@ -1551,3 +1528,4 @@ if ($user_id) {
             }
         });
     </script>
+</div>

@@ -986,6 +986,14 @@ document.getElementById("confirmFinalBtn").addEventListener("click", async funct
                         body: JSON.stringify(captureData)
                     });
 
+                    // Check if response is JSON
+                    const contentType = captureRes.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const textResponse = await captureRes.text();
+                        console.error('Non-JSON response:', textResponse.substring(0, 500));
+                        throw new Error('Server returned invalid response. Please check the server logs.');
+                    }
+
                     const captureResult = await captureRes.json();
 
                     if (captureResult.success) {

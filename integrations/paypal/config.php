@@ -1,50 +1,65 @@
 <?php
 // integrations/paypal/config.php
 
-// Load environment variables
+// Load environment variables from .env file
 $envPath = __DIR__ . '/../../.env';
+$env_vars = [];
+
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#')) continue;
-        putenv($line);
+        if (empty($line) || $line[0] === '#') continue;
+        
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            
+            // Remove quotes
+            if ((str_starts_with($value, '"') && str_ends_with($value, '"')) || 
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                $value = substr($value, 1, -1);
+            }
+            
+            $env_vars[$key] = $value;
+        }
     }
 }
 
-// PayPal Configuration - Load from environment variables
-define('PAYPAL_CLIENT_ID', getenv('PAYPAL_CLIENT_ID') ?: '');
-define('PAYPAL_CLIENT_SECRET', getenv('PAYPAL_CLIENT_SECRET') ?: '');
-define('PAYPAL_MODE', getenv('PAYPAL_MODE') ?: 'sandbox');
+// PayPal Configuration
+define('PAYPAL_CLIENT_ID', $env_vars['PAYPAL_CLIENT_ID'] ?? '');
+define('PAYPAL_CLIENT_SECRET', $env_vars['PAYPAL_CLIENT_SECRET'] ?? '');
+define('PAYPAL_MODE', $env_vars['PAYPAL_MODE'] ?? 'sandbox');
 
 // Validate PayPal credentials
 if (empty(PAYPAL_CLIENT_ID) || empty(PAYPAL_CLIENT_SECRET)) {
-    error_log('WARNING: PayPal credentials not configured in .env file');
+    error_log('ERROR: PayPal credentials not configured in .env - CLIENT_ID: ' . (PAYPAL_CLIENT_ID ? 'SET' : 'MISSING') . ', SECRET: ' . (PAYPAL_CLIENT_SECRET ? 'SET' : 'MISSING'));
 }
 
 define('PAYPAL_API_BASE', PAYPAL_MODE === 'sandbox'
-    ? (getenv('PAYPAL_API_SANDBOX') ?: 'https://api-m.sandbox.paypal.com')
-    : (getenv('PAYPAL_API_LIVE') ?: 'https://api-m.paypal.com'));
+    ? ($env_vars['PAYPAL_API_SANDBOX'] ?? 'https://api-m.sandbox.paypal.com')
+    : ($env_vars['PAYPAL_API_LIVE'] ?? 'https://api-m.paypal.com'));
 
-// Gmail SMTP Configuration - Load from environment variables
-define('GMAIL_SMTP_USER', getenv('GMAIL_SMTP_USER') ?: '');
-define('GMAIL_SMTP_PASS', getenv('GMAIL_SMTP_PASS') ?: '');
-define('GMAIL_FROM_NAME', getenv('GMAIL_FROM_NAME') ?: 'AirLyft');
-define('GMAIL_FROM_EMAIL', (getenv('GMAIL_FROM_EMAIL') ?: getenv('GMAIL_SMTP_USER')) ?: '');
+// Gmail SMTP Configuration
+define('GMAIL_SMTP_USER', $env_vars['GMAIL_SMTP_USER'] ?? '');
+define('GMAIL_SMTP_PASS', $env_vars['GMAIL_SMTP_PASS'] ?? '');
+define('GMAIL_FROM_NAME', $env_vars['GMAIL_FROM_NAME'] ?? 'AirLyft');
+define('GMAIL_FROM_EMAIL', $env_vars['GMAIL_FROM_EMAIL'] ?? $env_vars['GMAIL_SMTP_USER'] ?? '');
 
 // Validate Gmail credentials
 if (empty(GMAIL_SMTP_USER) || empty(GMAIL_SMTP_PASS)) {
-    error_log('WARNING: Gmail credentials not configured in .env file');
+    error_log('WARNING: Gmail credentials not configured in .env');
 }
 
-// SMS Gateway Cloud Configuration - Load from environment variables
-define('SMS_GATEWAY_USERNAME', getenv('SMS_GATEWAY_USERNAME') ?: '');
-define('SMS_GATEWAY_PASSWORD', getenv('SMS_GATEWAY_PASSWORD') ?: '');
-define('SMS_GATEWAY_API', getenv('SMS_GATEWAY_API') ?: 'https://api.sms-gate.app/3rdparty/v1');
+// SMS Gateway Configuration
+define('SMS_GATEWAY_USERNAME', $env_vars['SMS_GATEWAY_USERNAME'] ?? '');
+define('SMS_GATEWAY_PASSWORD', $env_vars['SMS_GATEWAY_PASSWORD'] ?? '');
+define('SMS_GATEWAY_API', $env_vars['SMS_GATEWAY_API'] ?? '');
 
 // Validate SMS credentials
 if (empty(SMS_GATEWAY_USERNAME) || empty(SMS_GATEWAY_PASSWORD)) {
-    error_log('WARNING: SMS Gateway credentials not configured in .env file');
+    error_log('WARNING: SMS Gateway credentials not configured in .env');
 }
 
 // Application Environment

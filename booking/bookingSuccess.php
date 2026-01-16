@@ -44,15 +44,14 @@ try {
     
     $booking = $result->fetch_assoc();
     
-    // Update Payment record with transaction ID
+    // Update Payment record
     $update_payment = $conn->prepare("
         UPDATE Payment 
         SET payment_status = 'Paid', 
-            paid_at = NOW(),
-            transaction_id = ?
+            paid_at = NOW()
         WHERE payment_id = ?
     ");
-    $update_payment->bind_param("si", $transaction_id, $booking['payment_id']);
+    $update_payment->bind_param("i", $booking['payment_id']);
     $update_payment->execute();
     
     // Update Booking status
@@ -517,7 +516,7 @@ try {
             <div class="alert-notification">
                 <h5>Booking Secured!</h5>
                 <p>
-                    A confirmation SMS has been sent to <strong><?= htmlspecialchars($passenger['passenger_phone_number'] ?? 'N/A') ?></strong>.<br>
+                    A confirmation SMS has been sent to <strong><?= htmlspecialchars($booking['user_phone'] ?? 'N/A') ?></strong>.<br>
                     A detailed confirmation email has been sent to <strong><?= htmlspecialchars($booking['email']) ?></strong>.
                 </p>
                 <small class="text-muted">Please check your inbox (and spam/junk folder) for complete details.</small>

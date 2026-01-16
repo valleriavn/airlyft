@@ -1,10 +1,12 @@
 <?php
 // integrations/paypal/capture_order.php
-session_start();
+// Start output buffering FIRST to catch any errors
 ob_start();
-header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', 0);
-error_reporting(E_ALL); // Enable for debugging
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
+
+session_start();
 
 // Load .env file from project root
 $envPath = dirname(__DIR__, 2) . '/.env';
@@ -12,19 +14,22 @@ if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || $line[0] === '#') continue;
-        
+        if (empty($line) || $line[0] === '#')
+            continue;
+
         if (strpos($line, '=') !== false) {
             list($key, $value) = explode('=', $line, 2);
             $key = trim($key);
             $value = trim($value);
-            
+
             // Remove quotes
-            if ((str_starts_with($value, '"') && str_ends_with($value, '"')) || 
-                (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+            if (
+                (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))
+            ) {
                 $value = substr($value, 1, -1);
             }
-            
+
             if (!defined($key)) {
                 define($key, $value);
             }
@@ -33,16 +38,63 @@ if (file_exists($envPath)) {
     }
 }
 
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/../../db/connect.php';
+// Suppress any output from included files
+ob_start();
+try {
+    require_once __DIR__ . '/config.php';
+    require_once __DIR__ . '/../../db/connect.php';
+
+    // Check if database connection was established
+    if (!isset($conn) || !$conn instanceof mysqli) {
+        throw new Exception('Database connection not established');
+    }
+} catch (Exception $e) {
+    ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(500);
+    exit(json_encode([
+        'success' => false,
+        'error' => 'Configuration error: ' . $e->getMessage()
+    ]));
+} catch (Error $e) {
+    ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(500);
+    exit(json_encode([
+        'success' => false,
+        'error' => 'Fatal error: ' . $e->getMessage()
+    ]));
+}
+ob_end_clean();
+
+// Now set JSON header
+header('Content-Type: application/json; charset=utf-8');
+
+// Register shutdown function to catch fatal errors
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        ob_end_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Fatal error: ' . $error['message'] . ' in ' . basename($error['file']) . ' on line ' . $error['line']
+        ]);
+        exit;
+    }
+});
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
 
+// Suppress any output from PHPMailer includes
+ob_start();
 require_once __DIR__ . '/../../vendor/PHPMailer/Exception.php';
 require_once __DIR__ . '/../../vendor/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/../../vendor/PHPMailer/SMTP.php';
+ob_end_clean();
 
 /* =========================
    METHOD CHECK
@@ -94,14 +146,14 @@ try {
     $stmt->bind_param("i", $booking_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result->num_rows === 0) {
         throw new Exception('Booking not found or already processed');
     }
-    
+
     $booking = $result->fetch_assoc();
     $stmt->close();
-    
+
     // Retrieve passenger phone number - handle INT type by converting to string
     $passenger_stmt = $conn->prepare("
         SELECT CAST(passenger_phone_number AS CHAR) as passenger_phone_number, 
@@ -119,15 +171,15 @@ try {
     $passenger_result = $passenger_stmt->get_result();
     $passenger = $passenger_result->fetch_assoc();
     $passenger_stmt->close();
-    
+
     $booking['passenger_phone_number'] = null;
     if ($passenger && !empty($passenger['passenger_phone_number'])) {
         // Convert to string and clean the phone number
-        $phone = trim((string)$passenger['passenger_phone_number']);
-        
+        $phone = trim((string) $passenger['passenger_phone_number']);
+
         // Remove any non-numeric characters
         $phone = preg_replace('/[^0-9]/', '', $phone);
-        
+
         // Format Philippine phone numbers
         if (strlen($phone) >= 10) {
             if (strlen($phone) === 10 && substr($phone, 0, 2) === '09') {
@@ -150,7 +202,7 @@ try {
                     $phone = '+63' . $phone;
                 }
             }
-            
+
             // Validate final format
             if (preg_match('/^\+63[0-9]{10}$/', $phone)) {
                 $booking['passenger_phone_number'] = $phone;
@@ -163,13 +215,13 @@ try {
         } else {
             error_log('WARNING: Phone number too short: ' . $phone . ' (length: ' . strlen($phone) . ') for booking #' . $booking_id);
         }
-    } 
-    
+    }
+
     // Fallback to user phone if passenger phone is not available
     if (empty($booking['passenger_phone_number']) && !empty($booking['user_phone'])) {
-        $phone = trim((string)$booking['user_phone']);
+        $phone = trim((string) $booking['user_phone']);
         $phone = preg_replace('/[^0-9]/', '', $phone);
-        
+
         if (strlen($phone) >= 10) {
             if (strlen($phone) === 10 && substr($phone, 0, 2) === '09') {
                 $phone = '+63' . substr($phone, 1);
@@ -178,7 +230,7 @@ try {
             } elseif (strlen($phone) === 10 && substr($phone, 0, 1) !== '0') {
                 $phone = '+63' . $phone;
             }
-            
+
             // Validate final format
             if (preg_match('/^\+63[0-9]{10}$/', $phone)) {
                 $booking['passenger_phone_number'] = $phone;
@@ -188,43 +240,105 @@ try {
             }
         }
     }
-    
+
     if (empty($booking['passenger_phone_number'])) {
         error_log('WARNING: No valid phone number found for booking #' . $booking_id . ' (passenger: ' . ($passenger['passenger_phone_number'] ?? 'N/A') . ', user: ' . ($booking['user_phone'] ?? 'N/A') . ')');
     }
-    
+
 } catch (Exception $e) {
     ob_end_clean();
     http_response_code(404);
     exit(json_encode([
-        'success' => false, 
+        'success' => false,
         'error' => 'Booking not found: ' . $e->getMessage()
     ]));
 }
 
 function get_paypal_token()
 {
+    // Validate PayPal credentials exist
+    if (!defined('PAYPAL_CLIENT_ID')) {
+        error_log('PayPal ERROR: PAYPAL_CLIENT_ID constant not defined');
+        return false;
+    }
+    if (!defined('PAYPAL_CLIENT_SECRET')) {
+        error_log('PayPal ERROR: PAYPAL_CLIENT_SECRET constant not defined');
+        return false;
+    }
+    if (!defined('PAYPAL_API_BASE')) {
+        error_log('PayPal ERROR: PAYPAL_API_BASE constant not defined');
+        return false;
+    }
+
+    if (empty(PAYPAL_CLIENT_ID) || empty(PAYPAL_CLIENT_SECRET) || empty(PAYPAL_API_BASE)) {
+        error_log('PayPal token error: Missing credentials - CLIENT_ID: ' . (PAYPAL_CLIENT_ID ? 'SET' : 'EMPTY') . ', SECRET: ' . (PAYPAL_CLIENT_SECRET ? 'SET' : 'EMPTY') . ', API_BASE: ' . (PAYPAL_API_BASE ? 'SET' : 'EMPTY'));
+        return false;
+    }
+
+    error_log('PayPal token request - API: ' . PAYPAL_API_BASE . ', Mode: ' . (defined('PAYPAL_MODE') ? PAYPAL_MODE : 'UNDEFINED'));
+
+    $token_url = PAYPAL_API_BASE . "/v1/oauth2/token";
+    error_log('PayPal token URL: ' . $token_url);
+
     $ch = curl_init();
     curl_setopt_array($ch, [
-        CURLOPT_URL => PAYPAL_API_BASE . "/v1/oauth2/token",
+        CURLOPT_URL => $token_url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => "grant_type=client_credentials",
         CURLOPT_USERPWD => PAYPAL_CLIENT_ID . ":" . PAYPAL_CLIENT_SECRET,
-        CURLOPT_HTTPHEADER => ["Accept: application/json"]
+        CURLOPT_HTTPHEADER => ["Accept: application/json"],
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10
     ]);
 
+    error_log('PayPal: Sending token request...');
+    
     $response = curl_exec($ch);
+    $curl_error = curl_error($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_info = curl_getinfo($ch);
     curl_close($ch);
 
+    error_log('PayPal token response HTTP code: ' . $http_code);
+
+    if ($curl_error) {
+        error_log("PayPal token curl error: $curl_error");
+        return false;
+    }
+
     if ($http_code !== 200) {
-        error_log("PayPal token error: HTTP $http_code - $response");
+        error_log("PayPal token error: HTTP $http_code - Response: " . substr($response, 0, 500));
+        return false;
+    }
+
+    // Check if response is HTML (error page)
+    if (strpos(trim($response), '<') === 0) {
+        error_log("PayPal token error: Received HTML instead of JSON. Response: " . substr($response, 0, 200));
+        return false;
+    }
+
+    // Check if response is empty
+    if (empty($response)) {
+        error_log("PayPal token error: Empty response from server");
         return false;
     }
 
     $data = json_decode($response, true);
-    return $data['access_token'] ?? false;
+    if (!is_array($data)) {
+        error_log("PayPal token error: Response is not valid JSON - " . substr($response, 0, 200));
+        return false;
+    }
+
+    if (!isset($data['access_token'])) {
+        error_log("PayPal token error: No access_token in response - " . json_encode($data));
+        return false;
+    }
+
+    error_log('PayPal token obtained successfully');
+    return $data['access_token'];
 }
 
 function send_confirmation_email($to, $phone, $booking_ref, $amount, $txn_id, $aircraftName, $destination, $departure_time)
@@ -233,12 +347,12 @@ function send_confirmation_email($to, $phone, $booking_ref, $amount, $txn_id, $a
         error_log('Email not sent: Gmail credentials not configured');
         return false;
     }
-    
+
     if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
         error_log('Email not sent: Invalid recipient email address: ' . $to);
         return false;
     }
-    
+
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -259,7 +373,7 @@ function send_confirmation_email($to, $phone, $booking_ref, $amount, $txn_id, $a
         $mail->Subject = 'AirLyft Booking Confirmation #' . $booking_ref;
 
         $departure_formatted = date('F d, Y h:i A', strtotime($departure_time));
-        
+
         $mail->Body = "
 <div style='max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;'>
 
@@ -343,104 +457,139 @@ function send_confirmation_email($to, $phone, $booking_ref, $amount, $txn_id, $a
     }
 }
 
-function send_sms($phone, $message)
+function send_sms($phone, $message, $booking_id = null, $conn = null)
 {
-    if (!defined('SMS_GATEWAY_USERNAME') || !defined('SMS_GATEWAY_PASSWORD') || !defined('SMS_GATEWAY_API')) {
-        error_log('SMS not sent: SMS Gateway credentials not configured in config.php');
+    // Check credentials
+    if (!defined('SMS_GATEWAY_USERNAME') || empty(SMS_GATEWAY_USERNAME)) {
+        error_log('SMS not sent: SMS Gateway username not configured');
         return false;
     }
-    
-    if (empty(SMS_GATEWAY_USERNAME) || empty(SMS_GATEWAY_PASSWORD) || empty(SMS_GATEWAY_API)) {
-        error_log('SMS not sent: SMS Gateway credentials are empty');
+
+    if (!defined('SMS_GATEWAY_PASSWORD') || empty(SMS_GATEWAY_PASSWORD)) {
+        error_log('SMS not sent: SMS Gateway password not configured');
         return false;
     }
-    
+
+    if (!defined('SMS_GATEWAY_API') || empty(SMS_GATEWAY_API)) {
+        error_log('SMS not sent: SMS Gateway API not configured');
+        return false;
+    }
+
     if (empty($phone)) {
         error_log('SMS not sent: Phone number is empty');
         return false;
     }
-    
-    // Clean and format phone number
+
+    if (empty($message)) {
+        error_log('SMS not sent: Message is empty');
+        return false;
+    }
+
+    // Format phone number
+    $phone = trim((string)$phone);
     $phone_clean = preg_replace('/[^0-9]/', '', $phone);
     
-    // Format for Philippines (+63XXXXXXXXXX)
+    error_log('SMS Debug: Original phone: ' . $phone . ', Cleaned: ' . $phone_clean . ', Length: ' . strlen($phone_clean));
+    
+    // Format Philippine phone numbers
     if (strlen($phone_clean) === 10 && substr($phone_clean, 0, 2) === '09') {
         $phone_formatted = '+63' . substr($phone_clean, 1);
     } elseif (strlen($phone_clean) === 11 && substr($phone_clean, 0, 3) === '639') {
         $phone_formatted = '+' . $phone_clean;
     } elseif (strlen($phone_clean) === 12 && substr($phone_clean, 0, 2) === '63') {
         $phone_formatted = '+' . $phone_clean;
-    } elseif (strlen($phone_clean) === 10 && substr($phone_clean, 0, 1) !== '0') {
-        $phone_formatted = '+63' . $phone_clean;
     } else {
-        $phone_formatted = $phone;
+        $phone_formatted = '+63' . $phone_clean;
     }
     
-    // Final validation for Philippine numbers
-    if (!preg_match('/^\+63[0-9]{10}$/', $phone_formatted)) {
-        error_log('SMS not sent: Invalid Philippine phone format: ' . $phone_formatted . ' (original: ' . $phone . ')');
+    error_log('SMS Debug: Formatted phone: ' . $phone_formatted);
+    
+    // Validate format
+    if (!preg_match('/^\+63\d{9,12}$/', $phone_formatted)) {
+        error_log('SMS Invalid format - ' . $phone_formatted . ' does not match +63 pattern');
         return false;
     }
-    
-    error_log('SMS sending to: ' . $phone_formatted . ' (original: ' . $phone . ')');
-    
-    $payload = [
-        'textMessage' => ['text' => $message],
-        'phoneNumbers' => [$phone_formatted]
-    ];
 
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => rtrim(SMS_GATEWAY_API, '/') . '/messages',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Authorization: Basic ' . base64_encode(SMS_GATEWAY_USERNAME . ":" . SMS_GATEWAY_PASSWORD)
-        ],
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2
+    error_log('SMS Sending to: ' . $phone_formatted . ' (original: ' . $phone . ')');
+    error_log('SMS Message: ' . substr($message, 0, 100));
+
+    // Build request payload
+    $payload = json_encode([
+        'phoneNumbers' => [$phone_formatted],
+        'message' => $message
     ]);
 
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error = curl_error($ch);
-    curl_close($ch);
+    error_log('SMS Payload JSON: ' . $payload);
+
+    // Create authentication header
+    $auth_header = "Authorization: Basic " . base64_encode(SMS_GATEWAY_USERNAME . ":" . SMS_GATEWAY_PASSWORD);
+    error_log('SMS Auth Header (masked): Authorization: Basic [redacted]');
+
+    // Create stream context with SSL configuration
+    $context = stream_context_create([
+        'http' => [
+            'method'  => 'POST',
+            'header'  => "Content-Type: application/json\r\n" . $auth_header,
+            'content' => $payload,
+            'timeout' => 10,
+            'ignore_errors' => true
+        ],
+        'ssl' => [
+            'verify_peer'      => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        ]
+    ]);
+
+    error_log('Attempting to send SMS to: ' . SMS_GATEWAY_API);
     
-    if ($curl_error) {
-        error_log('SMS cURL error: ' . $curl_error);
+    // Send SMS via gateway
+    $response = @file_get_contents(SMS_GATEWAY_API, false, $context);
+    
+    if ($response === false) {
+        $error = error_get_last();
+        error_log('SMS FAILED: No response from gateway - ' . ($error['message'] ?? 'Unknown error'));
+        error_log('SMS Gateway URL: ' . SMS_GATEWAY_API);
+        error_log('SMS Gateway may be unreachable or credentials are wrong');
+        return false;
+    }
+
+    error_log('SMS Gateway Response (' . strlen($response) . ' bytes): ' . $response);
+    
+    // Try to decode response
+    $response_data = json_decode($response, true);
+    
+    // Check for success indicators
+    if (is_array($response_data)) {
+        error_log('SMS Response decoded as JSON: ' . json_encode($response_data));
+        
+        if (isset($response_data['success']) && $response_data['success'] === true) {
+            error_log('SMS SUCCESS: Sent to ' . $phone_formatted);
+            return true;
+        }
+        
+        if (isset($response_data['status']) && in_array($response_data['status'], ['success', 'ok', 'sent', 'Success'])) {
+            error_log('SMS SUCCESS: Sent to ' . $phone_formatted);
+            return true;
+        }
+
+        if (isset($response_data['code']) && ($response_data['code'] == 0 || $response_data['code'] == '0')) {
+            error_log('SMS SUCCESS: Sent to ' . $phone_formatted);
+            return true;
+        }
+        
+        error_log('SMS FAILED: Gateway returned error - ' . json_encode($response_data));
         return false;
     }
     
-    error_log('SMS Gateway Response - HTTP: ' . $http_code . ' | Response: ' . $response);
-    
-    // SUCCESS: HTTP 202 (Accepted) or 200 (OK) - SMS Gate returns 202 for "Accepted"
-    if ($http_code === 202 || $http_code === 200) {
-        error_log('SMS sent successfully to: ' . $phone_formatted);
+    // Some gateways return empty response on success
+    if (empty($response)) {
+        error_log('SMS SUCCESS: Empty response from gateway (typically indicates success)');
         return true;
-    } else {
-        error_log('SMS send failed. HTTP Code: ' . $http_code . ' | Response: ' . $response);
-        return false;
     }
-}
-
-function send_confirmation_sms($phone, $booking_ref, $amount, $txn_id, $aircraft, $departure_time)
-{
-    $departure_formatted = date('F d, Y h:i A', strtotime($departure_time));
     
-    $message = "AirLyft Booking Confirmed\nRef: #{$booking_ref}\nTxn: {$txn_id}\nAmount: ₱" . number_format($amount, 2) . "\nAircraft: {$aircraft}\nDeparture: {$departure_formatted}\nStatus: Confirmed\nOur team will contact you shortly.";
-    
-    return send_sms($phone, $message);
-}
-
-function send_snack_sms($phone, $booking_ref)
-{
-    $message = "AirLyft Complimentary Snack Selection\n----------------------------------\nBooking: #{$booking_ref}\nPlease reply with your choice:\nA - Chips & Nuts\nB - Sandwich & Juice\nC - Pasta & Champagne\n\nReply with A, B, or C only.";
-    
-    return send_sms($phone, $message);
+    error_log('SMS FAILED: Invalid response format - ' . substr($response, 0, 200));
+    return false;
 }
 
 $token = get_paypal_token();
@@ -462,12 +611,47 @@ curl_setopt_array($ch, [
         "Content-Type: application/json",
         "Authorization: Bearer $token",
         "Prefer: return=representation"
-    ]
+    ],
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_CONNECTTIMEOUT => 10
 ]);
 
 $response = curl_exec($ch);
+$curl_error = curl_error($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
+
+// Check for curl errors first
+if ($curl_error) {
+    ob_end_clean();
+    http_response_code(500);
+    exit(json_encode([
+        'success' => false,
+        'error' => 'PayPal API connection error: ' . $curl_error
+    ]));
+}
+
+// Check if response is empty
+if (empty($response)) {
+    ob_end_clean();
+    http_response_code(500);
+    exit(json_encode([
+        'success' => false,
+        'error' => 'Empty response from PayPal API'
+    ]));
+}
+
+// Check if response starts with HTML (error page)
+if (strpos(trim($response), '<') === 0) {
+    ob_end_clean();
+    http_response_code(500);
+    exit(json_encode([
+        'success' => false,
+        'error' => 'PayPal API returned HTML instead of JSON. HTTP Code: ' . $http_code
+    ]));
+}
 
 $data = json_decode($response, true);
 if (!is_array($data)) {
@@ -475,7 +659,8 @@ if (!is_array($data)) {
     http_response_code(500);
     exit(json_encode([
         'success' => false,
-        'error' => 'Invalid PayPal response'
+        'error' => 'Invalid PayPal response: ' . substr($response, 0, 200),
+        'http_code' => $http_code
     ]));
 }
 
@@ -484,29 +669,28 @@ if ($http_code >= 200 && $http_code < 300 && ($data['status'] ?? '') === 'COMPLE
     $capture = $data['purchase_units'][0]['payments']['captures'][0] ?? [];
     $transaction_id = $capture['id'] ?? 'TXN-' . time();
     $amount = $capture['amount']['value'] ?? $booking['total_amount'];
-    
+
     try {
         $conn->begin_transaction();
-        
+
         if (empty($booking['payment_id'])) {
             throw new Exception('Payment ID not found for this booking');
         }
-        
+
         $update_payment = $conn->prepare("
             UPDATE Payment 
             SET payment_status = 'Paid', 
-                paid_at = NOW(),
-                transaction_id = ?
+                paid_at = NOW()
             WHERE payment_id = ?
         ");
-        $update_payment->bind_param("si", $transaction_id, $booking['payment_id']);
+        $update_payment->bind_param("i", $booking['payment_id']);
         $update_payment->execute();
-        
+
         if ($update_payment->affected_rows === 0) {
             throw new Exception('Failed to update payment record');
         }
         $update_payment->close();
-        
+
         $update_booking = $conn->prepare("
             UPDATE Booking 
             SET booking_status = 'Confirmed'
@@ -514,17 +698,17 @@ if ($http_code >= 200 && $http_code < 300 && ($data['status'] ?? '') === 'COMPLE
         ");
         $update_booking->bind_param("i", $booking_id);
         $update_booking->execute();
-        
+
         if ($update_booking->affected_rows === 0) {
             throw new Exception('Failed to update booking status');
         }
         $update_booking->close();
-        
+
         $conn->commit();
-        
+
         $email_subject = 'AirLyft Booking Confirmation #' . $booking_id;
         $email_recipient = $booking['user_email'] ?? '';
-        
+
         $emailSent = false;
         $emailStatus = 'Failed';
         try {
@@ -548,16 +732,17 @@ if ($http_code >= 200 && $http_code < 300 && ($data['status'] ?? '') === 'COMPLE
             error_log('Email sending exception: ' . $e->getMessage());
             $emailStatus = 'Failed';
         }
-        
+
         try {
             $email_notif_stmt = $conn->prepare("
                 INSERT INTO emailnotification (booking_id, recipient, subject, email_notif_status, sent_at)
                 VALUES (?, ?, ?, ?, NOW())
             ");
-            $email_notif_stmt->bind_param("isss", 
-                $booking_id, 
-                $email_recipient, 
-                $email_subject, 
+            $email_notif_stmt->bind_param(
+                "isss",
+                $booking_id,
+                $email_recipient,
+                $email_subject,
                 $emailStatus
             );
             $email_notif_stmt->execute();
@@ -565,188 +750,70 @@ if ($http_code >= 200 && $http_code < 300 && ($data['status'] ?? '') === 'COMPLE
         } catch (Exception $e) {
             error_log('Failed to log email notification: ' . $e->getMessage());
         }
-        
+
         // Prepare SMS confirmation message
         $sms_message = "AirLyft Booking Confirmed\nRef: #{$booking_id}\nTxn: {$transaction_id}\nAmount: ₱" . number_format($amount, 2) . "\nAircraft: {$booking['aircraft_name']}\nDeparture: " . date('F d, Y h:i A', strtotime($booking['departure_time'])) . "\nStatus: Confirmed\nOur team will contact you shortly.";
-        
+
         $smsSent = false;
         $smsStatus = 'Failed';
-        $snackSmsSent = false;
-        $snackSmsStatus = 'Failed';
+
+        // SMS should be sent to the user's phone (from Users table)
+        $phone_to_use = $booking['user_phone'] ?? null;
         
-        // SMS should be sent to the user's phone (booking_id references user_id)
-        // Format and validate user phone number
-        $phone_to_use = null;
-        if (!empty($booking['user_phone'])) {
-            $phone = trim((string)$booking['user_phone']);
-            $phone_clean = preg_replace('/[^0-9]/', '', $phone);
-            
-            // Format Philippine phone numbers
-            if (strlen($phone_clean) >= 10) {
-                if (strlen($phone_clean) === 10 && substr($phone_clean, 0, 2) === '09') {
-                    // Format: 09123456789 -> +639123456789
-                    $phone_formatted = '+63' . substr($phone_clean, 1);
-                } elseif (strlen($phone_clean) === 11 && substr($phone_clean, 0, 3) === '639') {
-                    // Format: 639123456789 -> +639123456789
-                    $phone_formatted = '+' . $phone_clean;
-                } elseif (strlen($phone_clean) === 12 && substr($phone_clean, 0, 2) === '63') {
-                    // Format: 6391234567890 -> +6391234567890
-                    $phone_formatted = '+' . $phone_clean;
-                } elseif (strlen($phone_clean) === 10 && substr($phone_clean, 0, 1) !== '0') {
-                    // Format: 9123456789 -> +639123456789
-                    $phone_formatted = '+63' . $phone_clean;
-                } else {
-                    // Default: assume it needs country code
-                    if (strlen($phone_clean) === 10) {
-                        $phone_formatted = '+63' . $phone_clean;
-                    } else {
-                        $phone_formatted = $phone; // Use original if can't format
-                    }
-                }
-                
-                // Validate final format
-                if (preg_match('/^\+63[0-9]{10}$/', $phone_formatted)) {
-                    $phone_to_use = $phone_formatted;
-                    error_log('Using user phone number for SMS: ' . $phone_to_use . ' (original: ' . $phone . ', booking #' . $booking_id . ')');
-                } else {
-                    error_log('WARNING: Invalid user phone format after processing: ' . $phone_formatted . ' (original: ' . $phone . ') for booking #' . $booking_id);
-                }
-            } else {
-                error_log('WARNING: User phone number too short: ' . $phone . ' (cleaned length: ' . strlen($phone_clean) . ') for booking #' . $booking_id);
-            }
-        }
-        
-        // Fallback to passenger phone if user phone is not available/valid
-        if (empty($phone_to_use) && !empty($booking['passenger_phone_number'])) {
-            $phone_to_use = $booking['passenger_phone_number'];
-            error_log('Using passenger phone number as fallback for SMS: ' . $phone_to_use . ' (booking #' . $booking_id . ')');
-        }
-        
+        error_log('SMS Debug: user_phone from booking: ' . ($phone_to_use ?? 'EMPTY'));
+
         // Send confirmation SMS to user phone number
         if (!empty($phone_to_use)) {
             try {
-                error_log('Attempting to send confirmation SMS to: ' . $phone_to_use . ' for booking #' . $booking_id);
-                $smsSent = send_confirmation_sms(
-                    $phone_to_use,
-                    $booking_id,
-                    $amount,
-                    $transaction_id,
-                    $booking['aircraft_name'],
-                    $booking['departure_time']
-                );
-                $smsStatus = $smsSent ? 'Sent' : 'Failed';
+                error_log('SMS: Attempting to send confirmation SMS to: ' . $phone_to_use . ' for booking #' . $booking_id);
+                
+                // First, insert the SMS record into database (initially with Pending status)
+                try {
+                    $sms_insert_stmt = $conn->prepare("
+                        INSERT INTO smsnotification (booking_id, message, sms_status)
+                        VALUES (?, ?, 'Pending')
+                    ");
+                    $sms_insert_stmt->bind_param(
+                        "is",
+                        $booking_id,
+                        $sms_message
+                    );
+                    $sms_insert_stmt->execute();
+                    $sms_insert_stmt->close();
+                    error_log('SMS: Record inserted into database for booking #' . $booking_id);
+                } catch (Exception $e) {
+                    error_log('SMS: Failed to insert SMS record into database: ' . $e->getMessage());
+                }
+                
+                // Send SMS via gateway
+                $smsSent = send_sms($phone_to_use, $sms_message, $booking_id, $conn);
                 
                 if ($smsSent) {
-                    error_log('Confirmation SMS sent successfully to ' . $phone_to_use . ' for booking #' . $booking_id);
+                    error_log('SMS: Confirmation SMS sent successfully to ' . $phone_to_use . ' for booking #' . $booking_id);
+                    $smsStatus = 'Sent';
                     
-                    // Log confirmation SMS notification
+                    // Update SMS notification status to Sent
                     try {
-                        $sms_notif_stmt = $conn->prepare("
-                            INSERT INTO smsnotification (booking_id, message, sms_status)
-                            VALUES (?, ?, ?)
-                        ");
-                        $sms_notif_stmt->bind_param("iss", 
-                            $booking_id, 
-                            $sms_message, 
-                            $smsStatus
-                        );
-                        $sms_notif_stmt->execute();
-                        $sms_notif_stmt->close();
+                        $sms_update_stmt = $conn->prepare("UPDATE smsnotification SET sms_status = 'Sent' WHERE booking_id = ? ORDER BY sms_id DESC LIMIT 1");
+                        $sms_update_stmt->bind_param("i", $booking_id);
+                        $sms_update_stmt->execute();
+                        $sms_update_stmt->close();
                     } catch (Exception $e) {
-                        error_log('Failed to log SMS notification: ' . $e->getMessage());
-                    }
-                    
-                    // Wait a moment then send snack selection SMS
-                    sleep(2);
-                    $snackMessage = "AirLyft Complimentary Snack Selection\n----------------------------------\nBooking: #{$booking_id}\nPlease reply with your choice:\nA - Chips & Nuts\nB - Sandwich & Juice\nC - Pasta & Champagne\n\nReply with A, B, or C only.";
-                    
-                    $snackSmsSent = send_sms($phone_to_use, $snackMessage);
-                    $snackSmsStatus = $snackSmsSent ? 'Sent' : 'Failed';
-                    
-                    if ($snackSmsSent) {
-                        error_log('Snack selection SMS sent successfully to ' . $phone_to_use . ' for booking #' . $booking_id);
-                        
-                        // Log snack SMS notification
-                        try {
-                            $snack_sms_notif_stmt = $conn->prepare("
-                                INSERT INTO smsnotification (booking_id, message, sms_status)
-                                VALUES (?, ?, ?)
-                            ");
-                            $snack_sms_notif_stmt->bind_param("iss", 
-                                $booking_id, 
-                                $snackMessage, 
-                                $snackSmsStatus
-                            );
-                            $snack_sms_notif_stmt->execute();
-                            $snack_sms_notif_stmt->close();
-                        } catch (Exception $e) {
-                            error_log('Failed to log snack SMS notification: ' . $e->getMessage());
-                        }
-                    } else {
-                        error_log('Snack selection SMS failed for booking #' . $booking_id);
+                        error_log('Failed to update SMS status to Sent: ' . $e->getMessage());
                     }
                 } else {
-                    error_log('Confirmation SMS failed for booking #' . $booking_id . ' to ' . $phone_to_use);
-                    
-                    // Log failed SMS attempt
-                    try {
-                        $sms_notif_stmt = $conn->prepare("
-                            INSERT INTO smsnotification (booking_id, message, sms_status)
-                            VALUES (?, ?, ?)
-                        ");
-                        $sms_notif_stmt->bind_param("iss", 
-                            $booking_id, 
-                            $sms_message, 
-                            $smsStatus
-                        );
-                        $sms_notif_stmt->execute();
-                        $sms_notif_stmt->close();
-                    } catch (Exception $e) {
-                        error_log('Failed to log SMS notification: ' . $e->getMessage());
-                    }
+                    error_log('SMS: Confirmation SMS failed for booking #' . $booking_id . ' to ' . $phone_to_use);
+                    $smsStatus = 'Failed';
                 }
             } catch (Exception $e) {
-                error_log('SMS sending exception for booking #' . $booking_id . ': ' . $e->getMessage());
+                error_log('SMS exception for booking #' . $booking_id . ': ' . $e->getMessage());
                 $smsStatus = 'Failed';
-                
-                // Log failed SMS attempt
-                try {
-                    $sms_notif_stmt = $conn->prepare("
-                        INSERT INTO smsnotification (booking_id, message, sms_status)
-                        VALUES (?, ?, ?)
-                    ");
-                    $sms_notif_stmt->bind_param("iss", 
-                        $booking_id, 
-                        $sms_message, 
-                        $smsStatus
-                    );
-                    $sms_notif_stmt->execute();
-                    $sms_notif_stmt->close();
-                } catch (Exception $e2) {
-                    error_log('Failed to log SMS notification: ' . $e2->getMessage());
-                }
             }
         } else {
-            error_log('SMS not sent: No valid phone number found for booking #' . $booking_id . ' (passenger phone: ' . ($booking['passenger_phone_number'] ?? 'empty') . ', user phone: ' . ($booking['user_phone'] ?? 'empty') . ')');
-            
-            // Log failed SMS attempt due to missing phone number
-            try {
-                $sms_notif_stmt = $conn->prepare("
-                    INSERT INTO smsnotification (booking_id, message, sms_status)
-                    VALUES (?, ?, ?)
-                ");
-                $sms_notif_stmt->bind_param("iss", 
-                    $booking_id, 
-                    $sms_message, 
-                    $smsStatus
-                );
-                $sms_notif_stmt->execute();
-                $sms_notif_stmt->close();
-            } catch (Exception $e) {
-                error_log('Failed to log SMS notification: ' . $e->getMessage());
-            }
+            error_log('SMS: No valid phone number found for booking #' . $booking_id);
+            $smsStatus = 'Failed';
         }
-        
+
         ob_end_clean();
         echo json_encode([
             'success' => true,
@@ -755,11 +822,10 @@ if ($http_code >= 200 && $http_code < 300 && ($data['status'] ?? '') === 'COMPLE
             'amount' => $amount,
             'email_sent' => $emailSent,
             'sms_sent' => $smsSent,
-            'snack_sms_sent' => $snackSmsSent,
             'redirect' => "../booking/bookingSuccess.php?booking_id=$booking_id&tx=$transaction_id&amount=$amount"
         ]);
         exit;
-        
+
     } catch (Exception $e) {
         $conn->rollback();
         ob_end_clean();

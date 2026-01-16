@@ -33,7 +33,7 @@ $stmt = $conn->prepare("
         p.method,
         p.payment_status,
         p.paid_at,
-        p.transaction_id,
+        NULL as transaction_id,
         s.departure_time,
         s.arrival_time,
         s.airport,

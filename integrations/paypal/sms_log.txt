@@ -1,0 +1,80 @@
+[2026-01-16 07:59:30] FROM: 123456789 | BOOKING: UNKNOWN | USER: UNKNOWN | MESSAGE: test message | SNACK: N/A | RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768546769996,
+  "receivedStamp":1768546769996,
+  "sim":"sim1"
+}
+[2026-01-16 08:00:03] FROM: 123456789 | BOOKING: UNKNOWN | USER: UNKNOWN | MESSAGE: test message | SNACK: N/A | RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768546803203,
+  "receivedStamp":1768546803203,
+  "sim":"sim1"
+}
+[2026-01-16 08:20:09] FROM: 123456789 | BOOKING: UNKNOWN | USER: UNKNOWN | MESSAGE: test message | SNACK: N/A | RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768548008609,
+  "receivedStamp":1768548008609,
+  "sim":"sim1"
+}
+[2026-01-16 08:48:19] FROM: 123456789 | BOOKING: UNKNOWN | USER: UNKNOWN | MESSAGE: test message | SNACK: N/A | RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768549698996,
+  "receivedStamp":1768549698996,
+  "sim":"sim1"
+}
+[2026-01-16 08:53:42] FROM: 123456789 | BOOKING: UNKNOWN | USER: UNKNOWN | MESSAGE: test message | SNACK: N/A | RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768550022512,
+  "receivedStamp":1768550022512,
+  "sim":"sim1"
+}
+[2026-01-16 09:11:37] FROM: 123456789 MESSAGE: test message BOOKING_ID:  USER_ID:  RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768551097304,
+  "receivedStamp":1768551097305,
+  "sim":"sim1"
+}
+[2026-01-16 09:11:50] FROM: Unknown MESSAGE: No Message BOOKING_ID:  USER_ID:  RAW: 
+[2026-01-16 09:15:21] FROM: 123456789 MESSAGE: test message BOOKING_ID:  USER_ID:  RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768551321472,
+  "receivedStamp":1768551321472,
+  "sim":"sim1"
+}
+[2026-01-16 09:19:49] FROM: Unknown MESSAGE: No Message BOOKING_ID:  USER_ID:  RAW: 
+[2026-01-16 09:27:22] FROM: 123456789 MESSAGE: test message BOOKING_ID:  USER_ID:  RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768552041764,
+  "receivedStamp":1768552041764,
+  "sim":"sim1"
+}
+[2026-01-16 09:27:22] FROM: 123456789 MESSAGE: test message BOOKING_ID:  USER_ID:  RAW: {
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768552041764,
+  "receivedStamp":1768552041764,
+  "sim":"sim1"
+}
+[2026-01-16 09:32:21] FROM:Unknown BOOKING: MSG:
+[2026-01-16 09:36:02] FROM:123456789 MESSAGE:test message BOOKING_ID: USER_ID: RAW:{
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768552561767,
+  "receivedStamp":1768552561767,
+  "sim":"sim1"
+}
+[2026-01-16 09:36:27] FROM:123456789 MESSAGE:test message BOOKING_ID: USER_ID: RAW:{
+  "from":"123456789",
+  "text":"test message",
+  "sentStamp":1768552587261,
+  "receivedStamp":1768552587261,
+  "sim":"sim1"
+}

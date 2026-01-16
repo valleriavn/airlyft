@@ -10,9 +10,10 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $pageTitle = "Private Flight Booking";
+$pageTitleColor = "black"; // Add color variable
 
 // Get selected destination
-$selected_place_id = isset($_GET['place_id']) ? (int)$_GET['place_id'] : 0;
+$selected_place_id = isset($_GET['place_id']) ? (int) $_GET['place_id'] : 0;
 $selected_place_name = '—';
 $selected_place_location = '';
 
@@ -27,7 +28,6 @@ if ($selected_place_id > 0) {
     }
 }
 
-// Load real aircraft from Lift table
 $aircraft_result = $conn->query("
     SELECT lift_id, aircraft_name, aircraft_type, capacity, price, lift_status
     FROM Lift 
@@ -43,39 +43,39 @@ while ($row = $aircraft_result->fetch_assoc()) {
     // Determine correct image folder
     $imagePath = '../assets/img/default.png'; // fallback
 
-$aircraftName = strtoupper(trim($row['aircraft_name']));
+    $aircraftName = strtoupper(trim($row['aircraft_name']));
 
-switch ($aircraftName) {
-    case 'CESSNA 206':
-        $imagePath = '../assets/img/cessna01/CESSNA 206-1.png';
-        break;
+    switch ($aircraftName) {
+        case 'CESSNA 206':
+            $imagePath = '../assets/img/cessna01/CESSNA 206-1.png';
+            break;
 
-    case 'CESSNA GRAND CARAVAN EX':
-        $imagePath = '../assets/img/cessna02/CESSNA GRAND CARAVAN EX-1.png';
-        break;
+        case 'CESSNA GRAND CARAVAN EX':
+            $imagePath = '../assets/img/cessna02/CESSNA GRAND CARAVAN EX-1.png';
+            break;
 
-    case 'AIRBUS H160':
-        $imagePath = '../assets/img/helicopter01/Airbus H160-1.png';
-        break;
+        case 'AIRBUS H160':
+            $imagePath = '../assets/img/helicopter01/Airbus H160-1.png';
+            break;
 
-    case 'SIKORSKY S-76D':
-        $imagePath = '../assets/img/helicopter02/Sikorsky S-76D-1.png';
-        break;
-}
+        case 'SIKORSKY S-76D':
+            $imagePath = '../assets/img/helicopter02/Sikorsky S-76D-1.png';
+            break;
+    }
 
     // Store data for JS
     $aircraft_data[$row['lift_id']] = [
-        'lift_id'     => $row['lift_id'],
-        'name'        => $row['aircraft_name'],
-        'type'        => $row['aircraft_type'],
-        'capacity'    => (int)$row['capacity'],
-        'price'       => (float)$row['price'],
-        'status'      => $row['lift_status'],
-        'image_path'  => $imagePath
+        'lift_id' => $row['lift_id'],
+        'name' => $row['aircraft_name'],
+        'type' => $row['aircraft_type'],
+        'capacity' => (int) $row['capacity'],
+        'price' => (float) $row['price'],
+        'status' => $row['lift_status'],
+        'image_path' => $imagePath
     ];
 
     // Create dropdown option
-    $aircraft_options .= '<option value="'.$row['lift_id'].'">'
+    $aircraft_options .= '<option value="' . $row['lift_id'] . '">'
         . htmlspecialchars($row['aircraft_name']) . ' (' . $row['capacity'] . ' seats)'
         . '</option>';
 }
@@ -112,7 +112,7 @@ $airports = [
 
 $airport_options = '';
 foreach ($airports as $code => $fullName) {
-    $airport_options .= '<option value="'.htmlspecialchars($code).'">'.htmlspecialchars($fullName).'</option>';
+    $airport_options .= '<option value="' . htmlspecialchars($code) . '">' . htmlspecialchars($fullName) . '</option>';
 }
 
 // Get user info
@@ -297,7 +297,8 @@ $user_json = json_encode($user);
             justify-content: center;
         }
 
-        .flatpickr-hour, .flatpickr-minute {
+        .flatpickr-hour,
+        .flatpickr-minute {
             font-size: 1.2rem;
             font-weight: bold;
         }
@@ -327,7 +328,7 @@ $user_json = json_encode($user);
             padding: 4px 8px;
             background: white;
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .legend-color {
@@ -365,7 +366,7 @@ $user_json = json_encode($user);
             background: white;
             border: 1px solid #dee2e6;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             display: none;
             max-height: 200px;
@@ -456,6 +457,12 @@ $user_json = json_encode($user);
             color: rgba(255, 255, 255, 0.45);
             font-size: 0.8rem;
         }
+
+        .card-header h3 {
+            color:
+                <?= $pageTitleColor ?>
+                !important;
+        }
     </style>
 </head>
 
@@ -475,7 +482,8 @@ $user_json = json_encode($user);
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center gap-1 gap-lg-3">
                     <li class="nav-item"><a class="nav-link" href="../index.php#home">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../destinations/destinations.php">Destinations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../destinations/destinations.php">Destinations</a>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#fleet">Our Fleet</a></li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#about">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#contact">Contact</a></li>
@@ -485,7 +493,8 @@ $user_json = json_encode($user);
                             <div class="user-avatar">
                                 <?= $userInitial ?>
                             </div>
-                            <span class="d-none d-md-inline"><?= htmlspecialchars($user['first_name'] ?? 'User') ?></span>
+                            <span
+                                class="d-none d-md-inline"><?= htmlspecialchars($user['first_name'] ?? 'User') ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="../booking/bookingHistory.php"><i
@@ -513,15 +522,17 @@ $user_json = json_encode($user);
                     <div class="card-body p-4 p-md-5">
                         <!-- Selected Destination Display -->
                         <?php if ($selected_place_id > 0): ?>
-                        <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
-                            <i class="bx bx-map me-3 fs-4"></i>
-                            <div>
-                                <h5 class="mb-1">Selected Destination: <?= htmlspecialchars($selected_place_name) ?></h5>
-                                <p class="mb-0"><?= htmlspecialchars($selected_place_location) ?></p>
-                                <input type="hidden" id="selectedPlaceId" value="<?= $selected_place_id ?>">
-                                <input type="hidden" id="selectedPlaceName" value="<?= htmlspecialchars($selected_place_name) ?>">
+                            <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
+                                <i class="bx bx-map me-3 fs-4"></i>
+                                <div>
+                                    <h5 class="mb-1">Selected Destination: <?= htmlspecialchars($selected_place_name) ?>
+                                    </h5>
+                                    <p class="mb-0"><?= htmlspecialchars($selected_place_location) ?></p>
+                                    <input type="hidden" id="selectedPlaceId" value="<?= $selected_place_id ?>">
+                                    <input type="hidden" id="selectedPlaceName"
+                                        value="<?= htmlspecialchars($selected_place_name) ?>">
+                                </div>
                             </div>
-                        </div>
                         <?php endif; ?>
 
                         <!-- Calendar Legend -->
@@ -588,7 +599,8 @@ $user_json = json_encode($user);
                             <!-- Departure Airport -->
                             <div class="mb-4">
                                 <label class="form-label fw-bold fs-5">Departure Airport</label>
-                                <select class="form-select form-select-lg" id="departureLocation" name="departure_location" required>
+                                <select class="form-select form-select-lg" id="departureLocation"
+                                    name="departure_location" required>
                                     <option value="" disabled selected>Select departure airport...</option>
                                     <?= $airport_options ?>
                                 </select>
@@ -597,29 +609,35 @@ $user_json = json_encode($user);
                             <!-- Dates & Times -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold fs-5">Departure Date <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold fs-5">Departure Date <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-lg" id="datePicker" name="date"
                                         required placeholder="Select date" readonly>
                                     <div class="form-text">Red dates are unavailable (past or already booked)</div>
                                 </div>
                                 <div class="col-md-6 time-picker-container">
-                                    <label class="form-label fw-bold fs-5">Departure Time <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold fs-5">Departure Time <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-lg" id="timePicker"
-                                        name="departure_time" required placeholder="Select time (9:00 AM - 6:00 PM)" readonly>
+                                        name="departure_time" required placeholder="Select time (9:00 AM - 6:00 PM)"
+                                        readonly>
                                     <div class="time-suggestions" id="timeSuggestions">
                                         <!-- Time suggestions will be populated by JavaScript -->
                                     </div>
                                     <div class="form-text">Recommended: 9:00 AM, 11:00 AM, 2:00 PM, 4:00 PM</div>
                                 </div>
                                 <div class="col-md-6" id="returnDateContainer" style="display:none;">
-                                    <label class="form-label fw-bold fs-5">Return Date <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold fs-5">Return Date <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-lg" id="returnDatePicker"
                                         name="return_date" placeholder="Select return date" readonly>
                                 </div>
                                 <div class="col-md-6" id="returnTimeContainer" style="display:none;">
-                                    <label class="form-label fw-bold fs-5">Return Time <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold fs-5">Return Time <span
+                                            class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-lg" id="returnTimePicker"
-                                        name="return_time" placeholder="Select return time (9:00 AM - 6:00 PM)" readonly>
+                                        name="return_time" placeholder="Select return time (9:00 AM - 6:00 PM)"
+                                        readonly>
                                 </div>
                             </div>
 
@@ -689,7 +707,7 @@ $user_json = json_encode($user);
         </div>
     </div>
 
-   <footer class="footer" id="contact">
+    <footer class="footer" id="contact">
         <div class="container">
             <div class="row gy-5 align-items-start">
 
@@ -703,15 +721,18 @@ $user_json = json_encode($user);
 
                 <div class="col-md-4 text-center text-md-start">
                     <h5 class="footer-title text-center text-md-start mb-3 mb-md-4">Get In Touch</h5>
-                    <ul class="list-unstyled contact-list mt-4 d-flex flex-column align-items-center align-items-md-start">
+                    <ul
+                        class="list-unstyled contact-list mt-4 d-flex flex-column align-items-center align-items-md-start">
                         <li class="mb-3">
-                            <a href="mailto:AirLyft16@gmail.com" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
-                                <i class="bx bxs-envelope me-2"></i> 
+                            <a href="mailto:AirLyft16@gmail.com"
+                                class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-envelope me-2"></i>
                                 <span>AirLyft16@gmail.com</span>
                             </a>
                         </li>
                         <li>
-                            <a href="tel:+639232912527" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                            <a href="tel:+639232912527"
+                                class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
                                 <i class="bx bxs-phone me-2"></i>
                                 <span>+63 923 291 2527</span>
                             </a>
@@ -757,12 +778,12 @@ $user_json = json_encode($user);
         const selectedPlaceId = <?= $selected_place_id ?>;
         const selectedPlaceName = "<?= addslashes($selected_place_name) ?>";
         const userId = <?= $_SESSION['user_id'] ?>;
-        
+
         // Global variable to store booking data
         let currentBookingData = null;
 
         // Navbar scroll effect
-        $(window).scroll(function() {
+        $(window).scroll(function () {
             if ($(this).scrollTop() > 50) {
                 $('.navbar').addClass('scrolled');
             } else {

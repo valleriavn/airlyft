@@ -1,6 +1,13 @@
 <?php
-// Review your existing connection
-// (keeping it as-is, no changes)
+$envPath = __DIR__ . '/../.env'; 
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) continue;
+        putenv($line); // set environment variable
+    }
+}
 
 // db/connect.php
 $host = 'localhost';

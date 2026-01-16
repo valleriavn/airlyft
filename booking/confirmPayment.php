@@ -23,11 +23,10 @@ try {
     $update_payment = $conn->prepare("
         UPDATE Payment 
         SET payment_status = 'Paid', 
-            paid_at = NOW(),
-            transaction_id = ?
+            paid_at = NOW()
         WHERE payment_id = ?
     ");
-    $update_payment->bind_param("si", $transaction_id, $payment_id);
+    $update_payment->bind_param("i", $payment_id);
     $update_payment->execute();
     
     // 2. Update Booking status

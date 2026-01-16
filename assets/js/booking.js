@@ -1,4 +1,4 @@
-// booking.js - Complete updated version with better time picker
+// booking.js - Complete updated version with better time picker and fixed passenger validation
 
 function showAlert(message, type = "warning") {
     const box = document.getElementById("formAlert");
@@ -340,6 +340,116 @@ els.passengersInput.addEventListener('input', function () {
     generatePassengerFields();
 });
 
+// -------------------- Input Validation Helper Functions --------------------
+function validateNameInput(input, isFirstName = true) {
+    const value = input.value.trim();
+    const fieldName = isFirstName ? "First name" : "Last name";
+    
+    if (!value) {
+        return `${fieldName} is required`;
+    }
+    
+    if (value.length < 2) {
+        return `${fieldName} must be at least 2 characters`;
+    }
+    
+    // Allow letters, spaces, hyphens, and apostrophes (for names like O'Connor or Jean-Claude)
+    if (!/^[A-Za-z\s\-']+$/.test(value)) {
+        return `${fieldName} can only contain letters, spaces, hyphens, and apostrophes`;
+    }
+    
+    return null; // No error
+}
+
+function validateEmailInput(input, isRequired = true) {
+    const value = input.value.trim();
+    
+    if (!value && isRequired) {
+        return "Email is required";
+    }
+    
+    if (value) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(value)) {
+            return "Please enter a valid email address format";
+        }
+        
+        const emailLower = value.toLowerCase();
+        if (!emailLower.endsWith('@gmail.com')) {
+            return "Please enter a valid Gmail address (must end with @gmail.com)";
+        }
+    }
+    
+    return null; // No error
+}
+
+function validatePhoneInput(input, isRequired = true) {
+    const value = input.value.trim();
+    
+    if (!value && isRequired) {
+        return "Phone number is required";
+    }
+    
+    if (value) {
+        // Clean the phone number - remove all non-digit characters
+        const phoneClean = value.replace(/\D/g, '');
+        
+        if (phoneClean.length !== 11) {
+            return "Phone number must be 11 digits";
+        }
+        
+        if (!/^09[0-9]{9}$/.test(phoneClean)) {
+            return "Please enter a valid Philippine mobile number starting with 09";
+        }
+        
+        // Format the phone number back to display format
+        input.value = phoneClean;
+    }
+    
+    return null; // No error
+}
+
+// -------------------- Real-time Input Validation --------------------
+function setupRealTimeValidation() {
+    // Add input event listeners to all passenger fields
+    els.dynamicPassengers.addEventListener('input', function(e) {
+        const input = e.target;
+        const parent = input.closest('.passenger-card');
+        
+        if (!parent) return;
+        
+        // Remove any existing validation messages
+        input.classList.remove('is-invalid');
+        const existingFeedback = input.nextElementSibling;
+        if (existingFeedback && existingFeedback.classList.contains('invalid-feedback')) {
+            existingFeedback.remove();
+        }
+        
+        let error = null;
+        
+        // Validate based on input type/name
+        if (input.name.includes('passenger_f_name[]')) {
+            error = validateNameInput(input, true);
+        } else if (input.name.includes('passenger_l_name[]')) {
+            error = validateNameInput(input, false);
+        } else if (input.name.includes('passenger_email[]')) {
+            const isPrimary = parent.querySelector('.badge.bg-primary') !== null;
+            error = validateEmailInput(input, isPrimary);
+        } else if (input.name.includes('passenger_phone[]')) {
+            const isPrimary = parent.querySelector('.badge.bg-primary') !== null;
+            error = validatePhoneInput(input, isPrimary);
+        }
+        
+        if (error) {
+            input.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = error;
+            input.parentNode.appendChild(feedback);
+        }
+    });
+}
+
 // -------------------- Validate Passengers --------------------
 function validatePassengers() {
     const fNames = document.querySelectorAll('[name="passenger_f_name[]"]');
@@ -353,109 +463,53 @@ function validatePassengers() {
         return false;
     }
 
-    // Clear previous validation
-    document.querySelectorAll('.is-invalid').forEach(el => {
-        el.classList.remove('is-invalid');
-    });
+    let allValid = true;
 
     for (let i = 0; i < fNames.length; i++) {
-        const fn = fNames[i].value.trim();
-        const ln = lNames[i].value.trim();
-        const em = emails[i] ? emails[i].value.trim() : '';
-        const ph = phones[i] ? phones[i].value.trim() : '';
+        const fn = fNames[i];
+        const ln = lNames[i];
+        const em = emails[i];
+        const ph = phones[i];
+        const isPrimary = i === 0;
 
-        // Validate firstname
-        if (!fn) {
-            showAlert(`Passenger ${i + 1}: First name is required`, 'warning');
-            fNames[i].classList.add('is-invalid');
-            fNames[i].focus();
-            return false;
+        // Validate first name
+        const firstNameError = validateNameInput(fn, true);
+        if (firstNameError) {
+            showAlert(`Passenger ${i + 1}: ${firstNameError}`, 'warning');
+            fn.classList.add('is-invalid');
+            if (allValid) fn.focus();
+            allValid = false;
         }
 
-        if (fn.length < 2) {
-            showAlert(`Passenger ${i + 1}: First name must be at least 2 characters`, 'warning');
-            fNames[i].classList.add('is-invalid');
-            fNames[i].focus();
-            return false;
+        // Validate last name
+        const lastNameError = validateNameInput(ln, false);
+        if (lastNameError) {
+            showAlert(`Passenger ${i + 1}: ${lastNameError}`, 'warning');
+            ln.classList.add('is-invalid');
+            if (allValid) ln.focus();
+            allValid = false;
         }
 
-        if (!/^[A-Za-z\s]+$/.test(fn)) {
-            showAlert(`Passenger ${i + 1}: First name can only contain letters and spaces`, 'warning');
-            fNames[i].classList.add('is-invalid');
-            fNames[i].focus();
-            return false;
+        // Validate email (required for primary only)
+        const emailError = validateEmailInput(em, isPrimary);
+        if (emailError) {
+            showAlert(`Passenger ${i + 1}: ${emailError}`, 'warning');
+            em.classList.add('is-invalid');
+            if (allValid) em.focus();
+            allValid = false;
         }
 
-        // Validate lastname
-        if (!ln) {
-            showAlert(`Passenger ${i + 1}: Last name is required`, 'warning');
-            lNames[i].classList.add('is-invalid');
-            lNames[i].focus();
-            return false;
-        }
-
-        if (ln.length < 2) {
-            showAlert(`Passenger ${i + 1}: Last name must be at least 2 characters`, 'warning');
-            lNames[i].classList.add('is-invalid');
-            lNames[i].focus();
-            return false;
-        }
-
-        if (!/^[A-Za-z\s]+$/.test(ln)) {
-            showAlert(`Passenger ${i + 1}: Last name can only contain letters and spaces`, 'warning');
-            lNames[i].classList.add('is-invalid');
-            lNames[i].focus();
-            return false;
-        }
-
-        // For primary passenger (index 0)
-        if (i === 0) {
-            // Validate email
-            if (!em) {
-                showAlert('Primary passenger: Email is required', 'warning');
-                emails[i].classList.add('is-invalid');
-                emails[i].focus();
-                return false;
-            }
-
-            // Validate email format
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(em)) {
-                showAlert('Primary passenger: Please enter a valid email address format', 'warning');
-                emails[i].classList.add('is-invalid');
-                emails[i].focus();
-                return false;
-            }
-
-            // Validate Gmail
-            const emailLower = em.toLowerCase();
-            if (!emailLower.endsWith('@gmail.com')) {
-                showAlert('Primary passenger: Please enter a valid Gmail address (must end with @gmail.com)', 'warning');
-                emails[i].classList.add('is-invalid');
-                emails[i].focus();
-                return false;
-            }
-
-            // Validate phone
-            if (!ph) {
-                showAlert('Primary passenger: Phone number is required', 'warning');
-                phones[i].classList.add('is-invalid');
-                phones[i].focus();
-                return false;
-            }
-
-            // Validate phone format (clean it first)
-            const phoneClean = ph.replace(/\D/g, '');
-            if (!/^09[0-9]{9}$/.test(phoneClean)) {
-                showAlert('Primary passenger: Please enter a valid 11-digit Philippine phone number (09XXXXXXXXX)', 'warning');
-                phones[i].classList.add('is-invalid');
-                phones[i].focus();
-                return false;
-            }
+        // Validate phone (required for primary only)
+        const phoneError = validatePhoneInput(ph, isPrimary);
+        if (phoneError) {
+            showAlert(`Passenger ${i + 1}: ${phoneError}`, 'warning');
+            ph.classList.add('is-invalid');
+            if (allValid) ph.focus();
+            allValid = false;
         }
     }
 
-    return true;
+    return allValid;
 }
 
 // -------------------- Check Aircraft Availability --------------------
@@ -602,10 +656,12 @@ function generatePassengerFields() {
                     class="form-control"
                     name="passenger_f_name[]"
                     required
-                    pattern="^[A-Za-z\s]+$"
-                    value="${firstName}">
+                    placeholder="Enter first name"
+                    value="${firstName}"
+                    data-validate="name"
+                    data-field="first">
               <div class="invalid-feedback">
-                Please enter a valid first name. Name field should contain alphabets [a-z], [A-Z] only
+                Please enter a valid first name (letters, spaces, hyphens, apostrophes only)
               </div>
             </div>
 
@@ -616,10 +672,12 @@ function generatePassengerFields() {
                     class="form-control"
                     name="passenger_l_name[]"
                     required
-                    pattern="^[A-Za-z\s]+$"
-                    value="${lastName}">
+                    placeholder="Enter last name"
+                    value="${lastName}"
+                    data-validate="name"
+                    data-field="last">
               <div class="invalid-feedback">
-                Please enter a valid last name. Name field should contain alphabets [a-z], [A-Z] only
+                Please enter a valid last name (letters, spaces, hyphens, apostrophes only)
               </div>
             </div>
 
@@ -632,9 +690,11 @@ function generatePassengerFields() {
                     class="form-control"
                     name="passenger_email[]"
                     ${isPrimary ? 'required' : ''}
-                    value="${email}">
+                    placeholder="example@gmail.com"
+                    value="${email}"
+                    data-validate="email">
               <div class="invalid-feedback">
-                Enter an email address in this format: name@example.com
+                Please enter a valid Gmail address (must end with @gmail.com)
               </div>
             </div>
 
@@ -646,12 +706,14 @@ function generatePassengerFields() {
               <input type="tel"
                     class="form-control"
                     name="passenger_phone[]"
-                    pattern="^[0-9]{1,11}$"
+                    placeholder="09123456789"
                     maxlength="11"
                     ${isPrimary ? 'required' : ''}
-                    value="${phone}">
+                    value="${phone}"
+                    data-validate="phone"
+                    onkeypress="return event.charCode >= 48 && event.charCode <= 57">
               <div class="invalid-feedback">
-                Invalid phone number. Use digits only, up to 11
+                Please enter a valid 11-digit Philippine mobile number starting with 09
               </div>
             </div>
 
@@ -673,6 +735,7 @@ function generatePassengerFields() {
     }
 
     bindInsuranceListeners();
+    setupRealTimeValidation();
     updateTotalPrice();
 }
 
@@ -996,6 +1059,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.time-suggestions').forEach(el => {
                 el.style.display = 'none';
             });
+        }
+    });
+    
+    // Add phone number formatting
+    document.addEventListener('input', function(e) {
+        if (e.target.name === 'passenger_phone[]') {
+            // Remove all non-digit characters
+            e.target.value = e.target.value.replace(/\D/g, '');
         }
     });
 });

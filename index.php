@@ -147,7 +147,7 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                                 <span class="d-none d-md-inline"><?= htmlspecialchars($userName) ?></span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="booking/transactionHistory.php"><i class='bx bx-history'></i> Transaction History</a></li>
+                                <li><a class="dropdown-item" href="booking/bookingHistory.php"><i class='bx bx-history'></i> Booking History</a></li>
                                 <li><a class="dropdown-item" href="booking/destinations.php"><i class='bx bx-send'></i> Book a Flight</a></li>
                                 <li>
                                     <hr class="dropdown-divider">
@@ -443,19 +443,19 @@ $userName = $isLoggedIn ? ($_SESSION['name'] ?? $_SESSION['email'] ?? 'User') : 
                     </p>
                 </div>
 
-                <div class="col-md-4">
-                    <h5 class="footer-title">Get In Touch</h5>
-                    <ul class="list-unstyled contact-list mt-4">
+                <div class="col-md-4 text-center text-md-start">
+                    <h5 class="footer-title text-center text-md-start mb-3 mb-md-4">Get In Touch</h5>
+                    <ul class="list-unstyled contact-list mt-4 d-flex flex-column align-items-center align-items-md-start">
                         <li class="mb-3">
-                            <a href="mailto:AirLyft16@gmail.com" class="footer-link">
-                                <i class="bx bxs-envelope"></i>
-                                AirLyft16@gmail.com
+                            <a href="mailto:AirLyft16@gmail.com" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-envelope me-2"></i> 
+                                <span>AirLyft16@gmail.com</span>
                             </a>
                         </li>
                         <li>
-                            <a href="tel:+639232912527" class="footer-link">
-                                <i class="bx bxs-phone"></i>
-                                +63 923 291 2527
+                            <a href="tel:+639232912527" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-phone me-2"></i>
+                                <span>+63 923 291 2527</span>
                             </a>
                         </li>
                     </ul>

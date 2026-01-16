@@ -41,15 +41,27 @@ $aircraft_options = "";
 
 while ($row = $aircraft_result->fetch_assoc()) {
     // Determine correct image folder
-    $folder = '';
-    if (strtolower($row['aircraft_type']) === 'helicopter') {
-        $folder = stripos($row['aircraft_name'], 'sikorsky') !== false ? 'helicopter02' : 'helicopter01';
-    } else {
-        $folder = stripos($row['aircraft_name'], 'grand') !== false ? 'cessna02' : 'cessna01';
-    }
+    $imagePath = '../assets/img/default.png'; // fallback
 
-    // Build full image path
-    $imagePath = "../assets/img/$folder/" . $row['aircraft_name'] . "-1.png";
+$aircraftName = strtoupper(trim($row['aircraft_name']));
+
+switch ($aircraftName) {
+    case 'CESSNA 206':
+        $imagePath = '../assets/img/cessna01/CESSNA 206-1.png';
+        break;
+
+    case 'CESSNA GRAND CARAVAN EX':
+        $imagePath = '../assets/img/cessna02/CESSNA GRAND CARAVAN EX-1.png';
+        break;
+
+    case 'AIRBUS H160':
+        $imagePath = '../assets/img/helicopter01/Airbus H160-1.png';
+        break;
+
+    case 'SIKORSKY S-76D':
+        $imagePath = '../assets/img/helicopter02/Sikorsky S-76D-1.png';
+        break;
+}
 
     // Store data for JS
     $aircraft_data[$row['lift_id']] = [
@@ -111,6 +123,10 @@ $user_stmt->execute();
 $user_result = $user_stmt->get_result();
 $user = $user_result->fetch_assoc();
 
+// Get user's initials for avatar
+$userName = htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+$userInitial = strtoupper(substr($user['first_name'] ?? 'U', 0, 1));
+
 // Pass data to JavaScript
 $aircraft_json = json_encode($aircraft_data);
 $booked_dates_json = json_encode($booked_dates);
@@ -145,6 +161,35 @@ $user_json = json_encode($user);
     <!-- Custom styles -->
     <link rel="stylesheet" href="../assets/css/booking.css">
     <style>
+        :root {
+            --primary: #0047ab;
+            --primary-dark: #002d72;
+            --accent: #e31837;
+            --emerald: #00a86b;
+            --luxury-gold: #d4af37;
+            --dark: #1a1a1a;
+            --light: #f8f9fa;
+        }
+
+        body {
+            font-family: "Montserrat", sans-serif;
+            color: var(--dark);
+            background: #fff;
+            line-height: 1.7;
+            scroll-behavior: smooth;
+            padding-top: 70px;
+            min-height: 100vh;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: "Playfair Display", serif;
+        }
+
         .navbar {
             background: rgba(0, 71, 171, 0.92);
             backdrop-filter: blur(10px);
@@ -158,28 +203,51 @@ $user_json = json_encode($user);
         }
 
         .nav-logo {
-            height: 60px;
+            height: 50px;
         }
 
         .nav-link {
             color: white !important;
             font-weight: 500;
-            transition: color 0.3s;
+            padding: 0.5rem 1rem !important;
+            position: relative;
+            font-size: 0.9rem;
         }
 
-        .nav-link:hover {
-            color: var(--emerald) !important;
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--luxury-gold) !important;
         }
 
-        .btn-outline-light {
-            border-color: white;
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--luxury-gold);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 70%;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0047ab, #002d72);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            transition: all 0.3s;
-        }
-
-        .btn-outline-light:hover {
-            background: white;
-            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         /* Calendar styling */
@@ -324,13 +392,77 @@ $user_json = json_encode($user);
             font-weight: bold;
             color: #007bff;
         }
+
+        .footer {
+            background: var(--primary-dark);
+            color: #ffffff;
+            padding: 5rem 0 3rem;
+        }
+
+        .footer-brand {
+            font-size: 2.4rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            font-family: "Playfair Display", serif;
+        }
+
+        .footer-tagline {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .footer-title {
+            font-size: 0.95rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            transition: color 0.25s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--luxury-gold);
+        }
+
+        .footer-info li {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 0.9rem;
+            margin-bottom: 0.6rem;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .footer-info li:before {
+            content: "✔";
+            color: var(--luxury-gold);
+            margin-right: 10px;
+        }
+
+        .footer-divider {
+            margin: 3.5rem 0 1.5rem;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .footer-copy {
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg fixed-top">
-        <div class="container-fluid px-4 px-lg-5">
+        <div class="container-fluid px-3 px-lg-4">
             <a class="navbar-brand d-flex align-items-center" href="../index.php">
                 <img src="../assets/img/logo.png" alt="AirLyft Logo" class="nav-logo">
             </a>
@@ -341,18 +473,28 @@ $user_json = json_encode($user);
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center gap-2 gap-lg-4">
+                <ul class="navbar-nav ms-auto align-items-center gap-1 gap-lg-3">
                     <li class="nav-item"><a class="nav-link" href="../index.php#home">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="../destinations/destinations.php">Destinations</a></li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#fleet">Our Fleet</a></li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#about">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="../index.php#contact">Contact</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bx bx-user me-1"></i> <?= htmlspecialchars($user['first_name'] ?? 'Users') ?>
+                    <li class="nav-item dropdown user-dropdown ms-lg-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="user-avatar">
+                                <?= $userInitial ?>
+                            </div>
+                            <span class="d-none d-md-inline"><?= htmlspecialchars($user['first_name'] ?? 'User') ?></span>
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="../auth/logout.php"><i class="bx bx-log-out me-2"></i> Logout</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="../booking/bookingHistory.php"><i
+                                        class='bx bx-history'></i> Booking History</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="../auth/logout.php"><i class='bx bx-log-out'></i>
+                                    Logout</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -547,10 +689,10 @@ $user_json = json_encode($user);
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer" id="contact">
+   <footer class="footer" id="contact">
         <div class="container">
             <div class="row gy-5 align-items-start">
+
                 <div class="col-md-4 text-center text-md-start">
                     <h3 class="footer-brand">AirLyft</h3>
                     <p class="footer-tagline mt-3">
@@ -559,17 +701,19 @@ $user_json = json_encode($user);
                     </p>
                 </div>
 
-                <div class="col-md-4">
-                    <h5 class="footer-title">Get In Touch</h5>
-                    <ul class="list-unstyled contact-list mt-4">
+                <div class="col-md-4 text-center text-md-start">
+                    <h5 class="footer-title text-center text-md-start mb-3 mb-md-4">Get In Touch</h5>
+                    <ul class="list-unstyled contact-list mt-4 d-flex flex-column align-items-center align-items-md-start">
                         <li class="mb-3">
-                            <a href="mailto:AirLyft16@gmail.com" class="footer-link">
-                                <i class="bx bxs-envelope"></i> AirLyft16@gmail.com
+                            <a href="mailto:AirLyft16@gmail.com" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-envelope me-2"></i> 
+                                <span>AirLyft16@gmail.com</span>
                             </a>
                         </li>
                         <li>
-                            <a href="tel:+639232912527" class="footer-link">
-                                <i class="bx bxs-phone"></i> +63 923 291 2527
+                            <a href="tel:+639232912527" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-phone me-2"></i>
+                                <span>+63 923 291 2527</span>
                             </a>
                         </li>
                     </ul>
@@ -590,7 +734,7 @@ $user_json = json_encode($user);
 
             <div class="text-center">
                 <small class="footer-copy">
-                    © <?= date("Y") ?> AirLyft Travel Co. All rights reserved.
+                    © <?= date("Y") ?> Airlyft Travel Co. All rights reserved.
                 </small>
             </div>
         </div>
@@ -616,6 +760,15 @@ $user_json = json_encode($user);
         
         // Global variable to store booking data
         let currentBookingData = null;
+
+        // Navbar scroll effect
+        $(window).scroll(function() {
+            if ($(this).scrollTop() > 50) {
+                $('.navbar').addClass('scrolled');
+            } else {
+                $('.navbar').removeClass('scrolled');
+            }
+        });
     </script>
     <script src="../assets/js/booking.js" defer></script>
 </body>

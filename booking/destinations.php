@@ -645,6 +645,7 @@ $image_mapping = [
     <footer class="footer" id="contact">
         <div class="container">
             <div class="row gy-5 align-items-start">
+
                 <div class="col-md-4 text-center text-md-start">
                     <h3 class="footer-brand">AirLyft</h3>
                     <p class="footer-tagline mt-3">
@@ -652,23 +653,25 @@ $image_mapping = [
                         Seamless access to exclusive destinations across the Philippines.
                     </p>
                 </div>
-                <div class="col-md-4">
-                    <h5 class="footer-title">Get In Touch</h5>
-                    <ul class="list-unstyled contact-list mt-4">
+
+                <div class="col-md-4 text-center text-md-start">
+                    <h5 class="footer-title text-center text-md-start mb-3 mb-md-4">Get In Touch</h5>
+                    <ul class="list-unstyled contact-list mt-4 d-flex flex-column align-items-center align-items-md-start">
                         <li class="mb-3">
-                            <a href="mailto:AirLyft16@gmail.com" class="footer-link">
-                                <i class="bx bxs-envelope"></i>
-                                AirLyft16@gmail.com
+                            <a href="mailto:AirLyft16@gmail.com" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-envelope me-2"></i> 
+                                <span>AirLyft16@gmail.com</span>
                             </a>
                         </li>
                         <li>
-                            <a href="tel:+639232912527" class="footer-link">
-                                <i class="bx bxs-phone"></i>
-                                +63 923 291 2527
+                            <a href="tel:+639232912527" class="footer-link d-flex align-items-center justify-content-center justify-content-md-start">
+                                <i class="bx bxs-phone me-2"></i>
+                                <span>+63 923 291 2527</span>
                             </a>
                         </li>
                     </ul>
                 </div>
+
                 <div class="col-md-4 text-center text-md-start">
                     <h5 class="footer-title">Why Fly With Us</h5>
                     <ul class="list-unstyled footer-info mt-4">
@@ -679,7 +682,9 @@ $image_mapping = [
                     </ul>
                 </div>
             </div>
+
             <div class="footer-divider"></div>
+
             <div class="text-center">
                 <small class="footer-copy">
                     © <?= date("Y") ?> Airlyft Travel Co. All rights reserved.
